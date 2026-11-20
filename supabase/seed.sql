@@ -1,0 +1,3 @@
+-- Yerel geliştirme için örnek veriler bu dosyaya eklenecek.
+-- "npm run db:reset" komutu, migrations klasöründeki tabloları kurduktan sonra bu dosyayı çalıştırır.
+-- Gerçek müşteri, hasta veya hayvan verisi BURAYA EKLENMEZ; yalnızca uydurma olduğu açık test verileri kullanılır.

@@ -1,0 +1,19 @@
+# bağımlılıklar
+node_modules/
+
+# ortam değişkenleri (gerçek anahtarlar asla git'e girmez)
+.env
+.env.*
+!.env.example
+
+# derleme çıktıları ve günlükler
+dist/
+*.log
+*.tsbuildinfo
+
+# işletim sistemi / editör
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
