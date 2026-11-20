@@ -151,6 +151,52 @@ export function Checkbox({
   );
 }
 
+export function Stepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+  suffix,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+  suffix?: string;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.stepperRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label} azalt`}
+          onPress={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          style={[styles.stepperButton, value <= min && { opacity: 0.4 }]}
+        >
+          <Text style={styles.stepperButtonText}>−</Text>
+        </Pressable>
+        <Text style={styles.stepperValue} accessibilityLabel={`${label}: ${value}`}>
+          {value}
+          {suffix ? ` ${suffix}` : ''}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label} artır`}
+          onPress={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          style={[styles.stepperButton, value >= max && { opacity: 0.4 }]}
+        >
+          <Text style={styles.stepperButtonText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export function LinkText({ title, onPress }: { title: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={{ paddingVertical: 8 }}>
@@ -244,5 +290,26 @@ export const styles = StyleSheet.create({
   checkboxMark: { color: colors.primaryText, fontWeight: '700' },
   link: { color: colors.primary, fontWeight: '600', textAlign: 'center' },
   info: { backgroundColor: '#e3f1ea', borderRadius: 8, padding: 12, marginBottom: 12 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  stepperButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperButtonText: { fontSize: 22, color: colors.primary, fontWeight: '600' },
+  stepperValue: { fontSize: 18, fontWeight: '600', color: colors.text, minWidth: 80, textAlign: 'center' },
+  card: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 10,
+    backgroundColor: colors.surface,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 20, marginBottom: 8 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
 });

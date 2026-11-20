@@ -22,6 +22,12 @@ function petSummary(pet: Pet) {
   return parts.join(' · ')
 }
 
+const CUSTOMER_COLUMNS: string = [
+  'id, first_name, last_name, phone, address, email, created_at',
+  'kvkk_acceptances(version, accepted_at)',
+  'pets(*, food_records_with_schedule(id, brand, product_name, package_grams, package_count, daily_grams, end_date, days_left, reminder_enabled, reminder_date))',
+].join(', ')
+
 // Salt okunur müşteri ve hayvan listesi. Bu ekrandan kayıt değiştirilemez.
 export function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerWithPets[]>([])
@@ -35,12 +41,11 @@ export function CustomersPage() {
     fetchAll<CustomerWithPets>((from, to) =>
       client
         .from('profiles')
-        .select(
-          'id, first_name, last_name, phone, address, email, created_at, pets(*), kvkk_acceptances(version, accepted_at)',
-        )
+        .select(CUSTOMER_COLUMNS)
         .order('created_at', { ascending: false })
         .order('id')
-        .range(from, to),
+        .range(from, to)
+        .overrideTypes<CustomerWithPets[], { merge: false }>(),
     )
       .then((list) => setCustomers(list))
       .catch(() => setError('Kayıtlar yüklenemedi.'))
@@ -116,6 +121,13 @@ export function CustomersPage() {
                 <li key={pet.id}>
                   <strong>{pet.name}</strong> <span className="muted">{petSummary(pet)}</span>
                   {pet.notes ? <div className="muted note">Not: {pet.notes}</div> : null}
+                  {pet.food_records_with_schedule?.map((f) => (
+                    <div key={f.id} className="food-line small">
+                      Mama: {f.brand} · {f.product_name} ({f.package_count > 1 ? `${f.package_count} × ` : ''}
+                      {f.package_grams} g, günde {f.daily_grams} g) — tahmini bitiş {formatDateOnly(f.end_date)} ({f.days_left} gün)
+                      {f.reminder_enabled ? `, hatırlatma ${formatDateOnly(f.reminder_date)}` : ', hatırlatma kapalı'}
+                    </div>
+                  ))}
                 </li>
               ))}
             </ul>

@@ -427,3 +427,8 @@ button.small {
     flex-direction: column;
   }
 }
+
+.food-line {
+  color: #2f6f4f;
+  margin-top: 2px;
+}

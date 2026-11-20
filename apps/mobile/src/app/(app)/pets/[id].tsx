@@ -1,9 +1,11 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, ErrorBanner, styles as ui } from '../../../components/ui';
+import { FoodSummary } from '../../../components/FoodSummary';
+import { Button, colors, ErrorBanner, styles as ui } from '../../../components/ui';
 import { toTurkishError } from '../../../lib/errors';
+import { listFoodRecords, type FoodRecord } from '../../../lib/food';
 import { getPet, SEX_LABEL, SPECIES_LABEL, type Pet } from '../../../lib/pets';
 import { formatTurkishDate } from '../../../lib/validation';
 
@@ -19,18 +21,23 @@ function Row({ label, value }: { label: string; value: string | null }) {
 export default function PetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pet, setPet] = useState<Pet | null>(null);
+  const [foods, setFoods] = useState<FoodRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    getPet(id)
-      .then((p) => {
-        setPet(p);
-        if (!p) setError('Hayvan profili bulunamadı.');
-      })
-      .catch((e) => setError(toTurkishError(e)))
-      .finally(() => setLoading(false));
-  }, [id]);
+  // Ekran her açıldığında (ör. mama eklendikten sonra) yenile.
+  useFocusEffect(
+    useCallback(() => {
+      Promise.all([getPet(id), listFoodRecords(id)])
+        .then(([p, f]) => {
+          setPet(p);
+          setFoods(f);
+          setError(p ? null : 'Hayvan profili bulunamadı.');
+        })
+        .catch((e) => setError(toTurkishError(e)))
+        .finally(() => setLoading(false));
+    }, [id]),
+  );
 
   if (loading) {
     return (
@@ -46,6 +53,29 @@ export default function PetDetailScreen() {
       <ErrorBanner message={error} />
       {pet ? (
         <>
+          <Text style={ui.sectionTitle}>Mamalar</Text>
+          {foods.length === 0 ? (
+            <Text style={[ui.muted, { marginBottom: 8 }]}>
+              Henüz mama eklemediniz. Mama ekleyince bitiş tarihini ve hatırlatma gününü hesaplarız.
+            </Text>
+          ) : (
+            foods.map((f) => (
+              <Pressable
+                key={f.id}
+                accessibilityRole="button"
+                style={ui.card}
+                onPress={() => router.push({ pathname: '/food/[id]', params: { id: f.id } })}
+              >
+                <FoodSummary record={f} />
+              </Pressable>
+            ))
+          )}
+          <Button
+            title="Mama ekle"
+            onPress={() => router.push({ pathname: '/food/new', params: { petId: pet.id, species: pet.species } })}
+          />
+
+          <Text style={ui.sectionTitle}>Bilgiler</Text>
           <Row label="Tür" value={SPECIES_LABEL[pet.species]} />
           <Row label="Ad" value={pet.name} />
           <Row label="Doğum tarihi" value={pet.birth_date ? formatTurkishDate(pet.birth_date) : null} />

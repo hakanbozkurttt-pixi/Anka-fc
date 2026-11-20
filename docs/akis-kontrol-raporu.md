@@ -9,8 +9,9 @@ Kontrol yalnızca yerel deneme ortamında, açıkça demo olarak işaretlenmiş 
 |---|---|
 | Müşteri kaydı (ad, soyad, telefon, adres, e-posta) | Çalışıyor, test edildi |
 | Kedi/köpek profili ekleme ve görüntüleme | Çalışıyor, test edildi (doğum tarihi hatası düzeltildi) |
-| Mama takibi, 25 gün hesabı, 5 gün önce hatırlatma | **Henüz geliştirilmedi** |
-| Bildirimin otomatik sipariş oluşturmaması | **Henüz geliştirilmedi** |
+| Mama takibi, 25 gün hesabı, 5 gün önce hatırlatma | Geliştirildi ve test edildi (20.11.2026, aşağıya bakın) |
+| Telefona bildirim gönderimi | **Henüz geliştirilmedi** (hatırlatma tarihi hesaplanıyor) |
+| Bildirimin otomatik sipariş oluşturmaması | Hatırlatma hiçbir sipariş kaydı oluşturmuyor (sipariş özelliği henüz yok) |
 | Sipariş, teslim şekli, 200 TL kargo | **Henüz geliştirilmedi** |
 | Sipariş onayı, tedarikçi teyidi, 3 iş günü | **Henüz geliştirilmedi** |
 | Panel ↔ müşteri sipariş durumu tutarlılığı | **Henüz geliştirilmedi** |
@@ -20,12 +21,15 @@ Kontrol yalnızca yerel deneme ortamında, açıkça demo olarak işaretlenmiş 
 
 Bu maddeler ilgili özellik geliştirilirken otomatik testlere dönüştürülmelidir.
 
-**Mama takibi ve hatırlatma**
-- 1.500 g paket, günde 60 g → tahmini bitiş 25. gün.
-- Hatırlatma varsayılan olarak bitişten 5 gün önce (yaklaşık 20. gün). *Gereksinim belgesinde
-  "yorum — onay bekliyor" olarak duruyor; kesinleşmesi gerekir.*
-- Müşteri hatırlatmayı mama kaydı bazında açıp kapatabilir ve gün sayısını seçebilir.
-- Hatırlatma **sipariş oluşturmaz**; müşteri istediği zaman sipariş verir.
+**Mama takibi ve hatırlatma** — *geliştirildi; kurallar otomatik testlerle denetleniyor*
+- 1.500 g paket, günde 60 g → tahmini bitiş 25. gün. ✔
+- Hatırlatma varsayılan olarak bitişten 5 gün önce (20. gün). ✔ *(Karar: 20.11.2026)*
+- Müşteri hatırlatmayı kayıt bazında açıp kapatabilir, gün sayısını 1–20 arasında seçebilir. ✔
+- Birden fazla paket: toplam gram ÷ günlük gram (2 × 1.500 g → 50 gün). ✔
+- Mama bitince sayaç aynı paketle kendiliğinden yeniden başlar. ✔
+- Hatırlatma **sipariş oluşturmaz**; müşteri istediği zaman sipariş verir. ✔
+- Kalan: hatırlatmanın telefona bildirim olarak gönderilmesi (Aşama 4); teslim edilen siparişten
+  sonra "yeni paketi kullanmaya başladınız mı?" sorusu (sipariş özelliğiyle birlikte).
 
 **Sipariş ve teslimat**
 - Hastaneden teslim almada kargo ücreti **yok**; adrese teslimatta sabit **200 TL** (adresten bağımsız).

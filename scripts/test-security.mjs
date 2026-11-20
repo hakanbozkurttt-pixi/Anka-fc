@@ -477,6 +477,121 @@ try {
     if (!error) createdImagePaths.push(path)
     assert.ok(error)
   })
+
+  console.log('Mama takibi')
+  const addDaysIso = (iso, n) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10)
+  }
+  const today = trDate(0)
+  const { data: catProduct } = await service.from('products').select('id').eq('code', `TEST-${run}-1500`).single()
+  const { data: passiveProduct } = await service.from('products').select('id').eq('code', `TEST-${run}-3000`).single()
+  const { data: pamuk } = await a.client.from('pets').select('id').eq('name', 'Pamuk').single()
+  const { data: karabas } = await b.client.from('pets').select('id').eq('name', 'Karabaş').single()
+  const view = (client, id) => client.from('food_records_with_schedule').select('*').eq('id', id).single()
+  let recordId
+
+  await test('veritabanı hesabı kararlarla aynı (25 gün, 20. gün hatırlatma, 2 paket = 50 gün, bitince yeniden)', async () => {
+    const calc = async (total, today) =>
+      (await a.client.rpc('food_schedule', { p_start: '2026-12-01', p_total_grams: total, p_daily_grams: 60, p_reminder_days: 5, p_today: today })).data[0]
+    const one = await calc(1500, '2026-12-01')
+    assert.deepEqual([one.supply_days, one.end_date, one.reminder_date], [25, '2026-12-26', '2026-12-21'])
+    const two = await calc(3000, '2026-12-01')
+    assert.deepEqual([two.supply_days, two.end_date, two.reminder_date], [50, '2027-01-20', '2027-01-15'])
+    const again = await calc(1500, '2026-12-26')
+    assert.deepEqual([again.cycle_number, again.cycle_start, again.end_date, again.reminder_date], [2, '2026-12-26', '2027-01-20', '2027-01-15'])
+  })
+
+  await test('müşteri hayvanına katalogdan mama ekleyebiliyor; hatırlatma varsayılan 5 gün', async () => {
+    const { data, error } = await a.client
+      .from('food_records')
+      .insert({ pet_id: pamuk.id, product_id: catProduct.id, daily_grams: 60, start_date: today })
+      .select('id')
+      .single()
+    assert.equal(error, null)
+    recordId = data.id
+    const { data: r } = await view(a.client, recordId)
+    assert.equal(r.package_grams, 1500) // katalogdan kopyalandı
+    assert.equal(r.product_name, `TEST ürünü 1500 ${run}`)
+    assert.equal(r.reminder_enabled, true)
+    assert.equal(r.reminder_days_before, 5)
+    assert.equal(r.supply_days, 25)
+    assert.equal(r.end_date, addDaysIso(today, 25))
+    assert.equal(r.reminder_date, addDaysIso(today, 20))
+    assert.equal(r.days_left, 25)
+  })
+
+  await test('2 paket alınınca toplam gram ÷ günlük gram (50 gün)', async () => {
+    await a.client.from('food_records').update({ package_count: 2 }).eq('id', recordId)
+    const { data: r } = await view(a.client, recordId)
+    assert.deepEqual([r.total_grams, r.supply_days, r.end_date], [3000, 50, addDaysIso(today, 50)])
+    await a.client.from('food_records').update({ package_count: 1 }).eq('id', recordId)
+  })
+
+  await test('mama bitince sayaç aynı paketle kendiliğinden yeniden başlıyor', async () => {
+    await a.client.from('food_records').update({ start_date: addDaysIso(today, -25) }).eq('id', recordId)
+    const { data: r } = await view(a.client, recordId)
+    assert.deepEqual([r.cycle_number, r.cycle_start, r.end_date, r.reminder_date], [2, today, addDaysIso(today, 25), addDaysIso(today, 20)])
+  })
+
+  await test('"yeni paketi başlattım": sayaç bugünden başlıyor', async () => {
+    await a.client.from('food_records').update({ start_date: today }).eq('id', recordId)
+    const { data: r } = await view(a.client, recordId)
+    assert.deepEqual([r.cycle_number, r.cycle_start], [1, today])
+  })
+
+  await test('hatırlatma günü 1-20 arasında; kapatılabiliyor', async () => {
+    const r0 = await a.client.from('food_records').update({ reminder_days_before: 0 }).eq('id', recordId)
+    const r21 = await a.client.from('food_records').update({ reminder_days_before: 21 }).eq('id', recordId)
+    const r20 = await a.client.from('food_records').update({ reminder_days_before: 20 }).eq('id', recordId)
+    const off = await a.client.from('food_records').update({ reminder_enabled: false }).eq('id', recordId)
+    assert.ok(r0.error)
+    assert.ok(r21.error)
+    assert.equal(r20.error, null)
+    assert.equal(off.error, null)
+    const { data: r } = await view(a.client, recordId)
+    assert.deepEqual([r.reminder_days_before, r.reminder_enabled, r.reminder_date], [20, false, addDaysIso(today, 5)])
+  })
+
+  await test('geçersiz kayıtlar reddediliyor (pasif ürün, gelecek tarih, günlük > toplam)', async () => {
+    const base = { pet_id: pamuk.id, product_id: catProduct.id, daily_grams: 60, start_date: today }
+    const passive = await a.client.from('food_records').insert({ ...base, product_id: passiveProduct.id })
+    const future = await a.client.from('food_records').insert({ ...base, start_date: trDate(1) })
+    const tooMuch = await a.client.from('food_records').insert({ ...base, daily_grams: 1501 })
+    assert.ok(passive.error)
+    assert.ok(future.error)
+    assert.ok(tooMuch.error)
+  })
+
+  await test('müşteri ürün bilgisini (paket gramı) değiştiremiyor', async () => {
+    const { error } = await a.client.from('food_records').update({ package_grams: 99999 }).eq('id', recordId)
+    assert.ok(error)
+  })
+
+  await test('müşteri başkasının hayvanına mama ekleyemiyor, kayıtlarını göremiyor ve silemiyor', async () => {
+    const ins = await a.client.from('food_records').insert({ pet_id: karabas.id, product_id: catProduct.id, daily_grams: 60, start_date: today })
+    assert.ok(ins.error)
+    const seen = await b.client.from('food_records_with_schedule').select('id').eq('id', recordId)
+    assert.equal(seen.data.length, 0)
+    await b.client.from('food_records').delete().eq('id', recordId)
+    await b.client.from('food_records').update({ daily_grams: 1 }).eq('id', recordId)
+    const { data: r } = await view(a.client, recordId)
+    assert.equal(r.daily_grams, 60)
+  })
+
+  await test('yönetici mama kayıtlarını görüyor ama değiştiremiyor', async () => {
+    const { data } = await view(adminClient, recordId)
+    assert.equal(data.id, recordId)
+    await adminClient.from('food_records').update({ daily_grams: 1 }).eq('id', recordId)
+    const { data: r } = await view(a.client, recordId)
+    assert.equal(r.daily_grams, 60)
+  })
+
+  await test('müşteri mama kaydını silebiliyor', async () => {
+    await a.client.from('food_records').delete().eq('id', recordId)
+    const { data } = await service.from('food_records').select('id').eq('id', recordId)
+    assert.equal(data.length, 0)
+  })
 } finally {
   // Test ürünlerini ve görsellerini temizle
   if (createdProductIds.length) await service.from('products').delete().in('id', createdProductIds)

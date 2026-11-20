@@ -17,8 +17,14 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 > - **Ürün kataloğu (yönetim paneli):** ürünleri tek tek ekleme/düzenleme (görsel dahil), aktif/pasif yapma,
 >   Excel/CSV şablonu indirme ve önizlemeli toplu yükleme. Kullanım kılavuzu: [docs/urun-katalogu-kilavuzu.md](docs/urun-katalogu-kilavuzu.md)
 >
-> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz mama takibi, sipariş, kargo, indirim,
-> kampanya veya bildirim özelliği yok.
+> - **Mama takibi (telefon uygulaması):** müşteri hayvanına katalogdan mama ekler (paket sayısı, günlük gram,
+>   başlangıç tarihi); uygulama tahmini bitiş ve hatırlatma tarihini hesaplar. Hatırlatma varsayılan olarak
+>   bitişten 5 gün önce, müşteri 1–20 gün arasında seçebilir veya kapatabilir. Mama bitince sayaç aynı paketle
+>   kendiliğinden yeniden başlar; "Yeni paketi kullanmaya başladım" sayacı bugünden başlatır. Birden fazla pakette
+>   toplam gram günlük grama bölünür. Hatırlatma sipariş oluşturmaz. Panelde müşterilerin mama kayıtları görünür.
+>
+> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz telefona bildirim gönderimi, sipariş, kargo,
+> indirim ve kampanya özelliği yok (hatırlatma tarihi hesaplanıyor ama telefona bildirim olarak gitmiyor).
 
 ---
 
@@ -216,7 +222,7 @@ Bu komutların hepsi proje kök klasöründe çalıştırılır.
 | `npm run admin:create -- <e-posta>` | Tek yönetici hesabını oluşturur |
 | `npm run admin:reset-password` | Yönetici şifresini unutulduğunda yeni şifre üretir |
 | `npm run db:test` | Kayıt, giriş ve erişim kurallarını yerel veritabanında test eder (uydurma demo kullanıcılarla; iş bitince siler) |
-| `npm test` | Kayıt formu ve toplu yükleme kurallarını test eder (veritabanı gerekmez) |
+| `npm test` | Kayıt formu, mama süresi/hatırlatma hesabı ve toplu yükleme kurallarını test eder (veritabanı gerekmez) |
 | `npm run typecheck` | İki uygulamada da kod hatası kontrolü yapar |
 | `npm run admin:build` | Yönetim panelinin yayına hazır hâlini derler (yayınlamaz) |
 
@@ -234,6 +240,7 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | KVKK onayları | `kvkk_acceptances` tablosu: hangi müşteri, metnin hangi sürümünü, ne zaman onayladı. Onay zamanı sunucu saatiyle yazılır; müşteri onayı değiştiremez veya silemez. |
 | Ürün kataloğu | `products` tablosu. Her paket boyutu ayrı satır. Stok ve günlük tüketim bilgisi tutulmaz. Yalnızca yönetici ekler/değiştirir; müşteriler yalnızca aktif ürünleri görebilir. |
 | Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
+| Mama takip kayıtları | `food_records` tablosu (paket sayısı, günlük gram, başlangıç, hatırlatma ayarı). Bitiş ve hatırlatma tarihi `food_records_with_schedule` görünümünde, Türkiye saatine göre hesaplanır. Müşteri yalnızca kendi kayıtlarını görür ve değiştirir; yönetici yalnızca okur. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 
 - **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.

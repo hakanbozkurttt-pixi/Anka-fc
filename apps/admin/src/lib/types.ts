@@ -11,6 +11,20 @@ export type Pet = {
   weight_kg: number | null
   notes: string | null
   created_at: string
+  food_records_with_schedule?: FoodRecordSummary[]
+}
+
+export type FoodRecordSummary = {
+  id: string
+  brand: string
+  product_name: string
+  package_grams: number
+  package_count: number
+  daily_grams: number
+  end_date: string
+  days_left: number
+  reminder_enabled: boolean
+  reminder_date: string
 }
 
 export type CustomerWithPets = {
