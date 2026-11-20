@@ -13,6 +13,7 @@
   "scripts": {
     "mobile": "npm run start --workspace mobile",
     "admin": "npm run dev --workspace admin",
+    "panel": "npm run db:start && npm run dev --workspace admin -- --open",
     "admin:build": "npm run build --workspace admin",
     "db:start": "supabase start",
     "db:stop": "supabase stop",

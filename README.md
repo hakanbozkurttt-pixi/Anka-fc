@@ -184,12 +184,29 @@ Eklediğin kayıtlar yönetim panelinde de görünür. "Şifremi unuttum" kodu d
 
 ---
 
+## Paneli tek tıkla açmak
+
+İlk kurulumu (yukarıdaki 1–4. adımlar) bir kez yaptıktan sonra paneli şöyle açabilirsin:
+
+1. **Docker Desktop**'ı aç.
+2. Proje klasöründeki dosyaya çift tıkla:
+   - Windows: **`Paneli-Ac.bat`**
+   - macOS: **`Paneli-Ac.command`** (ilk seferde "açılamıyor" uyarısı çıkarsa dosyaya sağ tıklayıp **Aç**'ı seç)
+3. Veritabanı başlar ve panel tarayıcıda kendiliğinden açılır (http://127.0.0.1:5173). Yönetici e-postası ve şifresiyle giriş yap.
+4. İşin bitince açılan siyah pencereyi kapat.
+
+Aynı işi terminalde `npm run panel` komutu da yapar.
+
+> Panel yalnızca bu bilgisayarda çalışır; internete açık değildir. Hastanedeki başka bir bilgisayardan
+> erişilebilmesi için panelin bir sunucuya yüklenmesi gerekir. Bu, ayrıca karar verilecek bir adımdır.
+
 ## Sık kullanılan komutlar
 
 Bu komutların hepsi proje kök klasöründe çalıştırılır.
 
 | Komut | Ne yapar |
 |---|---|
+| `npm run panel` | Veritabanını başlatır ve yönetim panelini tarayıcıda açar |
 | `npm run admin` | Yönetim panelini geliştirme modunda açar |
 | `npm run mobile` | Telefon uygulamasının geliştirme sunucusunu açar (QR kod) |
 | `npm run db:start` | Yerel Supabase'i başlatır (Docker gerekir) |
