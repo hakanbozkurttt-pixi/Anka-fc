@@ -491,3 +491,29 @@ button.small {
 .form h2 {
   margin-top: 8px;
 }
+
+/* --- Kampanyalar --- */
+.badge.campaign-active {
+  background: #e3f9e5;
+  color: #1f6f3b;
+}
+
+.badge.campaign-upcoming {
+  background: #fff3c4;
+  color: #8a5a00;
+}
+
+.campaign-form {
+  max-width: 960px;
+}
+
+.campaign-products {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.price-input {
+  width: 120px;
+  text-align: right;
+  padding: 6px 8px;
+}

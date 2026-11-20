@@ -1,4 +1,4 @@
-import type { DeliveryType, DiscountKind, OrderStatus } from './orderCalc';
+import type { ActiveCampaign, DeliveryType, DiscountKind, OrderStatus, PriceSource } from './orderCalc';
 import { supabase } from './supabase';
 
 export type OrderItem = {
@@ -9,6 +9,8 @@ export type OrderItem = {
   package_grams: number;
   list_price_try: number;
   discount_pct: number;
+  discount_source: PriceSource;
+  campaign_name: string | null;
   unit_price_try: number;
   quantity: number;
   line_total_try: number;
@@ -124,6 +126,22 @@ export async function getMyDiscount(): Promise<{ kind: DiscountKind; pct: number
   const row = (data as { kind: DiscountKind; pct: number }[])[0];
   const pct = num(row?.pct ?? 0);
   return { kind: pct > 0 ? row.kind : 'none', pct };
+}
+
+/** Bugün geçerli kampanyalar (müşteri yalnızca geçerli kampanyaları görebilir). */
+export async function listActiveCampaigns(): Promise<ActiveCampaign[]> {
+  const { data, error } = await client()
+    .from('campaigns')
+    .select('id, name, discount_type, percent, products:campaign_products(product_id, fixed_price_try)');
+  if (error) throw error;
+  return (data ?? []).map((c) => ({
+    ...(c as unknown as ActiveCampaign),
+    percent: c.percent == null ? null : num(c.percent),
+    products: ((c.products ?? []) as { product_id: string; fixed_price_try: unknown }[]).map((p) => ({
+      product_id: p.product_id,
+      fixed_price_try: p.fixed_price_try == null ? null : num(p.fixed_price_try),
+    })),
+  }));
 }
 
 export async function placeOrder(items: { product_id: string; quantity: number }[], delivery: DeliveryInput) {

@@ -25,7 +25,7 @@ export const DISCOUNT_LABEL: Record<DiscountKind, string> = {
   standard: 'İndirim',
 };
 
-export type CartLine = { listPrice: number; quantity: number };
+export type CartLine = { listPrice: number; unitPrice: number; quantity: number };
 
 const toKurus = (tl: number) => Math.round(tl * 100);
 
@@ -37,16 +37,70 @@ export function discountedPrice(listPrice: number, pct: number): number {
   return Math.round((toKurus(listPrice) * (100 - pct)) / 100) / 100;
 }
 
+export type ActiveCampaign = {
+  id: string;
+  name: string;
+  discount_type: 'percent' | 'fixed_price';
+  percent: number | null;
+  products: { product_id: string; fixed_price_try: number | null }[];
+};
+
+export type PriceSource = 'none' | 'first_order' | 'standard' | 'campaign';
+
+export type BestPrice = { unit: number; source: PriceSource; pct: number; campaignName: string | null };
+
+/**
+ * Bir ürün için en avantajlı TEK indirim (indirimler birleşmez).
+ * Adaylar: siparişin sabit indirimi (ilk sipariş / sonraki siparişler) ve bugün geçerli kampanyalar.
+ * En düşük fiyat seçilir; eşitlikte sabit indirim. Veritabanındaki best_unit_price ile aynı kural.
+ */
+export function bestUnitPrice(
+  productId: string,
+  listPrice: number,
+  orderKind: DiscountKind,
+  orderPct: number,
+  campaigns: ActiveCampaign[],
+): BestPrice {
+  let best: BestPrice = {
+    unit: discountedPrice(listPrice, orderPct),
+    source: orderPct > 0 ? orderKind : 'none',
+    pct: orderPct,
+    campaignName: null,
+  };
+  const sorted = [...campaigns].sort((a, b) => a.name.localeCompare(b.name));
+  for (const c of sorted) {
+    const cp = c.products.find((p) => p.product_id === productId);
+    if (!cp) continue;
+    const unit =
+      c.discount_type === 'percent'
+        ? discountedPrice(listPrice, c.percent ?? 0)
+        : Math.min(listPrice, cp.fixed_price_try ?? listPrice);
+    if (unit < best.unit) {
+      best = { unit, source: 'campaign', pct: c.discount_type === 'percent' ? (c.percent ?? 0) : 0, campaignName: c.name };
+    }
+  }
+  return best;
+}
+
+/** Sepet satırında gösterilecek indirim açıklaması */
+export function priceSourceLabel(b: { source: PriceSource; pct: number; campaignName: string | null }) {
+  const pct = `%${String(b.pct).replace('.', ',')}`;
+  if (b.source === 'campaign') return `Kampanya: ${b.campaignName}${b.pct > 0 ? ` (${pct})` : ''}`;
+  if (b.source === 'first_order') return `İlk sipariş indirimi (${pct})`;
+  if (b.source === 'standard') return `İndirim (${pct})`;
+  return '';
+}
+
 /**
  * Sipariş özeti. İndirim yalnızca ürünlere uygulanır, kargoya uygulanmaz.
  * Hesap kuruş üzerinden yapılır (ondalık hatası olmasın diye).
  */
-export function cartTotals(lines: CartLine[], deliveryType: DeliveryType, shippingFee: number, discountPct = 0) {
+export function cartTotals(lines: CartLine[], deliveryType: DeliveryType, shippingFee: number) {
   let listK = 0;
   let itemsK = 0;
   for (const l of lines) {
     listK += toKurus(l.listPrice) * l.quantity;
-    itemsK += toKurus(discountedPrice(l.listPrice, discountPct)) * l.quantity;
+    itemsK += toKurus(l.unitPrice) * l.quantity;
   }
   const shippingK = deliveryType === 'address' ? toKurus(shippingFee) : 0;
   return {

@@ -4,11 +4,11 @@ process.env.TZ = 'Europe/Istanbul';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { cartTotals, deliveryTimeError, discountedPrice, parseTime } from './orderCalc.ts';
+import { bestUnitPrice, cartTotals, deliveryTimeError, discountedPrice, parseTime, type ActiveCampaign } from './orderCalc.ts';
 import { orderNotices, type OrderStatusRow } from './orderNotices.ts';
 
 test('hastaneden teslim almada kargo ücreti eklenmez', () => {
-  assert.deepEqual(cartTotals([{ listPrice: 120.75, quantity: 2 }, { listPrice: 100, quantity: 1 }], 'pickup', 200), {
+  assert.deepEqual(cartTotals([{ listPrice: 120.75, unitPrice: 120.75, quantity: 2 }, { listPrice: 100, unitPrice: 100, quantity: 1 }], 'pickup', 200), {
     list: 341.5,
     discount: 0,
     items: 341.5,
@@ -18,8 +18,8 @@ test('hastaneden teslim almada kargo ücreti eklenmez', () => {
 });
 
 test('adrese teslimatta ayarlardaki kargo ücreti eklenir (200 TL veya yöneticinin belirlediği)', () => {
-  assert.equal(cartTotals([{ listPrice: 100, quantity: 1 }], 'address', 200).total, 300);
-  assert.equal(cartTotals([{ listPrice: 100, quantity: 1 }], 'address', 250).total, 350);
+  assert.equal(cartTotals([{ listPrice: 100, unitPrice: 100, quantity: 1 }], 'address', 200).total, 300);
+  assert.equal(cartTotals([{ listPrice: 100, unitPrice: 100, quantity: 1 }], 'address', 250).total, 350);
 });
 
 test('indirimli birim fiyat kuruşa yuvarlanır (veritabanıyla aynı)', () => {
@@ -30,12 +30,14 @@ test('indirimli birim fiyat kuruşa yuvarlanır (veritabanıyla aynı)', () => {
 });
 
 test('ilk sipariş %20: indirim yalnızca ürünlere, kargoya uygulanmaz', () => {
-  const t = cartTotals([{ listPrice: 250.5, quantity: 2 }, { listPrice: 1000, quantity: 1 }], 'address', 200, 20);
+  const line = (list: number, q: number) => ({ listPrice: list, unitPrice: discountedPrice(list, 20), quantity: q });
+  const t = cartTotals([line(250.5, 2), line(1000, 1)], 'address', 200);
   assert.deepEqual(t, { list: 1501, discount: 300.2, items: 1200.8, shipping: 200, total: 1400.8 });
 });
 
 test('sonraki siparişler %10', () => {
-  const t = cartTotals([{ listPrice: 250.5, quantity: 2 }, { listPrice: 1000, quantity: 1 }], 'pickup', 200, 10);
+  const line = (list: number, q: number) => ({ listPrice: list, unitPrice: discountedPrice(list, 10), quantity: q });
+  const t = cartTotals([line(250.5, 2), line(1000, 1)], 'pickup', 200);
   assert.deepEqual(t, { list: 1501, discount: 150.1, items: 1350.9, shipping: 0, total: 1350.9 });
 });
 
@@ -52,6 +54,38 @@ test('teslimat zamanı ileri bir zaman olmalı, en fazla 90 gün sonra', () => {
   assert.equal(deliveryTimeError('2026-11-20', '18:00', now), null);
   assert.equal(deliveryTimeError('2027-02-18', '10:00', now), null);
   assert.match(deliveryTimeError('2027-02-19', '10:00', now)!, /90 gün/);
+});
+
+// --- Kampanya: en avantajlı tek indirim (DEMO VERİSİ) ---
+const pct15: ActiveCampaign = { id: 'c1', name: 'Demo yüzde', discount_type: 'percent', percent: 15, products: [{ product_id: 'p1', fixed_price_try: null }] };
+const pct5: ActiveCampaign = { id: 'c2', name: 'Demo küçük', discount_type: 'percent', percent: 5, products: [{ product_id: 'p1', fixed_price_try: null }] };
+const fixed: ActiveCampaign = { id: 'c3', name: 'Demo sabit', discount_type: 'fixed_price', percent: null, products: [{ product_id: 'p1', fixed_price_try: 190 }] };
+
+test('kampanya sabit indirimden avantajlıysa kampanya uygulanır (%15 > %10)', () => {
+  assert.deepEqual(bestUnitPrice('p1', 250.5, 'standard', 10, [pct15]), { unit: 212.93, source: 'campaign', pct: 15, campaignName: 'Demo yüzde' });
+});
+
+test('sabit indirim kampanyadan avantajlıysa sabit indirim uygulanır (%10 > %5)', () => {
+  assert.equal(bestUnitPrice('p1', 250.5, 'standard', 10, [pct5]).source, 'standard');
+});
+
+test('indirimler birleşmez: %15 kampanya + %10 indirim = yalnızca %15', () => {
+  assert.equal(bestUnitPrice('p1', 100, 'standard', 10, [pct15]).unit, 85);
+});
+
+test('sabit fiyatlı kampanya sabit indirimle karşılaştırılır; düşük olan uygulanır', () => {
+  assert.equal(bestUnitPrice('p1', 250.5, 'first_order', 20, [fixed]).unit, 190); // 190 < 200,40
+  assert.equal(bestUnitPrice('p1', 230, 'first_order', 20, [fixed]).source, 'first_order'); // 184 < 190
+});
+
+test('birden fazla kampanyadan en avantajlısı; kampanyası olmayan ürüne yalnızca sabit indirim', () => {
+  assert.equal(bestUnitPrice('p1', 250.5, 'standard', 10, [pct5, pct15, fixed]).campaignName, 'Demo sabit');
+  assert.equal(bestUnitPrice('p2', 250.5, 'standard', 10, [pct15]).source, 'standard');
+});
+
+test('eşitlikte sabit indirim uygulanır', () => {
+  const ten: ActiveCampaign = { ...pct15, percent: 10 };
+  assert.equal(bestUnitPrice('p1', 100, 'standard', 10, [ten]).source, 'standard');
 });
 
 const row = (o: Partial<OrderStatusRow>): OrderStatusRow => ({

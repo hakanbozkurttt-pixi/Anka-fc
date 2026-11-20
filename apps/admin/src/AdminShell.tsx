@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CampaignsPage } from './campaigns/CampaignsPage'
 import { CatalogPage } from './catalog/CatalogPage'
 import { GuidePage } from './catalog/GuidePage'
 import { ImportPage } from './catalog/ImportPage'
@@ -11,6 +12,7 @@ const TABS = [
   { id: 'orders', label: 'Siparişler' },
   { id: 'catalog', label: 'Ürün kataloğu' },
   { id: 'import', label: 'Toplu yükleme' },
+  { id: 'campaigns', label: 'Kampanyalar' },
   { id: 'customers', label: 'Müşteriler' },
   { id: 'settings', label: 'Ayarlar' },
   { id: 'guide', label: 'Kılavuz' },
@@ -64,6 +66,7 @@ export function AdminShell({ email }: { email: string }) {
       <main>
         {tab === 'orders' && <OrdersPage />}
         {tab === 'settings' && <SettingsPage />}
+        {tab === 'campaigns' && <CampaignsPage />}
         {tab === 'catalog' && <CatalogPage onOpenImport={() => go('import')} onOpenGuide={() => go('guide')} />}
         {tab === 'import' && <ImportPage onDone={() => go('catalog')} onOpenGuide={() => go('guide')} />}
         {tab === 'guide' && <GuidePage />}

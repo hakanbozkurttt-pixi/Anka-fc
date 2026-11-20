@@ -8,7 +8,7 @@ import { Button, colors, ErrorBanner, InfoBanner, styles } from '../../../compon
 import { validateDelivery } from '../../../lib/deliveryValidation';
 import { toTurkishError } from '../../../lib/errors';
 import { formatKg } from '../../../lib/food';
-import { DELIVERY_LABEL, DISCOUNT_LABEL, formatTL } from '../../../lib/orderCalc';
+import { DELIVERY_LABEL, formatTL, priceSourceLabel } from '../../../lib/orderCalc';
 import {
   answerNewPackage,
   cancelOrder,
@@ -175,13 +175,18 @@ export default function OrderDetailScreen() {
             </Text>
             <Text style={styles.muted}>
               {formatKg(i.package_grams)} · {i.quantity} ×{' '}
-              {i.discount_pct > 0 ? (
+              {i.unit_price_try < i.list_price_try ? (
                 <>
                   <Text style={{ textDecorationLine: 'line-through' }}>{formatTL(i.list_price_try)}</Text>{' '}
                 </>
               ) : null}
               {formatTL(i.unit_price_try)} = {formatTL(i.line_total_try)}
             </Text>
+            {i.discount_source !== 'none' ? (
+              <Text style={{ color: '#1f6f3b' }}>
+                {priceSourceLabel({ source: i.discount_source, pct: i.discount_pct, campaignName: i.campaign_name })}
+              </Text>
+            ) : null}
           </View>
         ))}
 
@@ -211,10 +216,7 @@ export default function OrderDetailScreen() {
           {order.discount_total_try > 0 ? (
             <>
               <Text style={{ color: colors.text }}>Liste fiyatıyla: {formatTL(order.items_list_total_try)}</Text>
-              <Text style={{ color: '#1f6f3b' }}>
-                {DISCOUNT_LABEL[order.discount_kind]} (%{String(order.discount_pct).replace('.', ',')}): −
-                {formatTL(order.discount_total_try)}
-              </Text>
+              <Text style={{ color: '#1f6f3b' }}>İndirimler: −{formatTL(order.discount_total_try)}</Text>
             </>
           ) : null}
           <Text style={{ color: colors.text }}>Ürünler: {formatTL(order.items_total_try)}</Text>

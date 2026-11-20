@@ -828,6 +828,99 @@ try {
     assert.ok(r.error)
   })
 
+  console.log('Kampanyalar')
+  const kamp = (name, type, percent, products, start = trDate(0), end = trDate(30)) =>
+    adminClient.rpc('admin_save_campaign', {
+      campaign_id: null, name: `TEST ${name} ${run}`, discount_type: type, percent, start_date: start, end_date: end, products,
+    })
+  const createdCampaigns = []
+  const lineOf = async (orderId, productId) =>
+    (await order(a.client, orderId)).data.order_items.find((i) => i.product_id === productId)
+
+  await test('müşteri kampanya oluşturamıyor', async () => {
+    const { error } = await a.client.rpc('admin_save_campaign', {
+      campaign_id: null, name: 'X', discount_type: 'percent', percent: 50, start_date: trDate(0), end_date: trDate(1),
+      products: [{ product_id: catProduct.id }],
+    })
+    assert.ok(error)
+  })
+
+  await test('kampanya %15 > sabit %10: kampanya uygulanıyor, indirimler birleşmiyor', async () => {
+    const { data: cid, error } = await kamp('yüzde15', 'percent', 15, [{ product_id: catProduct.id }])
+    assert.equal(error, null)
+    createdCampaigns.push(cid)
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: catProduct.id, quantity: 1 }], delivery_type: 'pickup' })
+    const line = await lineOf(data.id, catProduct.id)
+    assert.deepEqual([line.discount_source, Number(line.discount_pct), Number(line.unit_price_try)], ['campaign', 15, dp(p1500price, 15)])
+    assert.equal(line.campaign_name, `TEST yüzde15 ${run}`)
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('kampanyası olmayan ürüne sabit indirim uygulanıyor', async () => {
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: pT1.id, quantity: 1 }], delivery_type: 'pickup' })
+    const line = await lineOf(data.id, pT1.id)
+    assert.deepEqual([line.discount_source, Number(line.discount_pct)], ['standard', 10])
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('sabit %10 > kampanya %5: sabit indirim uygulanıyor', async () => {
+    const { data: cid } = await kamp('yüzde5', 'percent', 5, [{ product_id: pT1.id }])
+    createdCampaigns.push(cid)
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: pT1.id, quantity: 1 }], delivery_type: 'pickup' })
+    const line = await lineOf(data.id, pT1.id)
+    assert.deepEqual([line.discount_source, Number(line.unit_price_try)], ['standard', dp(Number(pT1.price_try), 10)])
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('sabit fiyatlı kampanya sabit indirimle karşılaştırılıyor; düşük olan uygulanıyor', async () => {
+    const low = Math.round(dp(p1500price, 15) * 100 - 100) / 100 // %15'ten de 1 TL ucuz
+    const { data: cid } = await kamp('sabit', 'fixed_price', null, [{ product_id: catProduct.id, fixed_price_try: low }])
+    createdCampaigns.push(cid)
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: catProduct.id, quantity: 2 }], delivery_type: 'pickup' })
+    const line = await lineOf(data.id, catProduct.id)
+    assert.deepEqual([line.campaign_name, Number(line.unit_price_try), Number(line.line_total_try)], [`TEST sabit ${run}`, low, Math.round(low * 200) / 100])
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('başlamamış veya bitmiş kampanya uygulanmıyor ve müşteriye görünmüyor', async () => {
+    const { data: future } = await kamp('gelecek', 'percent', 80, [{ product_id: pT1.id }], trDate(5), trDate(10))
+    const { data: past } = await kamp('geçmiş', 'percent', 80, [{ product_id: pT1.id }], trDate(-10), trDate(-1))
+    createdCampaigns.push(future, past)
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: pT1.id, quantity: 1 }], delivery_type: 'pickup' })
+    const line = await lineOf(data.id, pT1.id)
+    assert.equal(line.discount_source, 'standard')
+    await a.client.rpc('cancel_order', { order_id: data.id })
+    const seen = await a.client.from('campaigns').select('id').in('id', [future, past])
+    assert.equal(seen.data.length, 0)
+    const active = await a.client.from('campaigns').select('id, campaign_products(product_id)').in('id', createdCampaigns)
+    assert.equal(active.data.length, 3)
+  })
+
+  await test('kampanya sonradan bitse veya değişse de verilmiş siparişin fiyatı değişmiyor', async () => {
+    const { data } = await a.client.rpc('place_order', { items: [{ product_id: catProduct.id, quantity: 1 }], delivery_type: 'pickup' })
+    const before = await lineOf(data.id, catProduct.id)
+    await adminClient.rpc('admin_save_campaign', {
+      campaign_id: createdCampaigns[2], name: `TEST sabit ${run}`, discount_type: 'fixed_price', percent: null,
+      start_date: trDate(-10), end_date: trDate(-1), products: [{ product_id: catProduct.id, fixed_price_try: 1 }],
+    })
+    const after = await lineOf(data.id, catProduct.id)
+    assert.equal(Number(after.unit_price_try), Number(before.unit_price_try))
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('sabit fiyatlı kampanyada ürün fiyatı olmadan kayıt reddediliyor', async () => {
+    const { error } = await kamp('eksik', 'fixed_price', null, [{ product_id: catProduct.id }])
+    assert.ok(error)
+  })
+
+  await test('yönetici kampanyayı silebiliyor; müşteri silemiyor', async () => {
+    await a.client.from('campaigns').delete().eq('id', createdCampaigns[0])
+    const still = await service.from('campaigns').select('id').eq('id', createdCampaigns[0])
+    assert.equal(still.data.length, 1)
+    const del = await adminClient.from('campaigns').delete().in('id', createdCampaigns).select('id')
+    assert.equal(del.data.length, createdCampaigns.length)
+  })
+
   await test('yönetici tüm siparişleri görüyor', async () => {
     const { data } = await adminClient.from('orders').select('id').eq('customer_id', a.data.user.id)
     assert.ok(data.length >= 4)
@@ -835,6 +928,7 @@ try {
 } finally {
   // Test siparişlerini, ürünlerini ve görsellerini temizle
   await service.from('orders').delete().in('customer_id', createdUserIds)
+  await service.from('campaigns').delete().like('name', `TEST % ${run}`)
   if (createdProductIds.length) await service.from('products').delete().in('id', createdProductIds)
   if (createdImagePaths.length) await service.storage.from('product-images').remove(createdImagePaths)
   // Demo kullanıcılarını temizle (profiller ve hayvanlar zincirleme silinir).

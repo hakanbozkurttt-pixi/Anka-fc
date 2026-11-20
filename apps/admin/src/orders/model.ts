@@ -33,6 +33,14 @@ export const DISCOUNT_LABEL = {
   standard: 'İndirim',
 } as const
 
+export function lineDiscountLabel(i: { discount_source: string; discount_pct: number; campaign_name: string | null }) {
+  const pct = `%${String(i.discount_pct).replace('.', ',')}`
+  if (i.discount_source === 'campaign') return `Kampanya: ${i.campaign_name ?? ''}${i.discount_pct > 0 ? ` (${pct})` : ''}`
+  if (i.discount_source === 'first_order') return `İlk sipariş (${pct})`
+  if (i.discount_source === 'standard') return `İndirim (${pct})`
+  return '—'
+}
+
 export type AdminOrder = {
   id: string
   order_no: number
@@ -58,6 +66,9 @@ export type AdminOrder = {
     product_name: string
     package_grams: number
     list_price_try: number
+    discount_source: 'none' | 'first_order' | 'standard' | 'campaign'
+    discount_pct: number
+    campaign_name: string | null
     unit_price_try: number
     quantity: number
     line_total_try: number

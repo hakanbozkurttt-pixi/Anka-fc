@@ -7,8 +7,15 @@ import { Button, colors, ErrorBanner, Field, Stepper, styles } from '../../../co
 import { validateDelivery } from '../../../lib/deliveryValidation';
 import { toTurkishError } from '../../../lib/errors';
 import { formatKg } from '../../../lib/food';
-import { cartTotals, discountedPrice, DISCOUNT_LABEL, formatTL, type DiscountKind } from '../../../lib/orderCalc';
-import { getMyDiscount, getShippingFee, listShopProducts, placeOrder, type ShopProduct } from '../../../lib/orders';
+import {
+  bestUnitPrice,
+  cartTotals,
+  formatTL,
+  priceSourceLabel,
+  type ActiveCampaign,
+  type DiscountKind,
+} from '../../../lib/orderCalc';
+import { getMyDiscount, getShippingFee, listActiveCampaigns, listShopProducts, placeOrder, type ShopProduct } from '../../../lib/orders';
 import { getMyProfile } from '../../../lib/profile';
 
 const SPECIES: Record<ShopProduct['species'], string> = { cat: 'Kedi', dog: 'Köpek', both: 'Kedi ve köpek' };
@@ -18,6 +25,7 @@ export default function NewOrderScreen() {
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [fee, setFee] = useState(0);
   const [discount, setDiscount] = useState<{ kind: DiscountKind; pct: number }>({ kind: 'none', pct: 0 });
+  const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -27,11 +35,12 @@ export default function NewOrderScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([listShopProducts(), getShippingFee(), getMyProfile(), getMyDiscount()])
-      .then(([list, f, profile, d]) => {
+    Promise.all([listShopProducts(), getShippingFee(), getMyProfile(), getMyDiscount(), listActiveCampaigns()])
+      .then(([list, f, profile, d, c]) => {
         setProducts(list);
         setFee(f);
         setDiscount(d);
+        setCampaigns(c);
         // Kayıtlı adres hazır gelir; müşteri bu sipariş için değiştirebilir.
         if (profile) setDelivery((d) => ({ ...d, address: profile.address }));
         if (productId && list.some((p) => p.id === productId)) setCart({ [productId]: 1 });
@@ -48,14 +57,20 @@ export default function NewOrderScreen() {
     );
   }, [products, query]);
 
-  const lines = products.filter((p) => cart[p.id]).map((p) => ({ product: p, quantity: cart[p.id] }));
+  // Her ürün için en avantajlı tek indirim (kampanya veya sabit indirim; birleşmez).
+  const lines = products
+    .filter((p) => cart[p.id])
+    .map((p) => ({
+      product: p,
+      quantity: cart[p.id],
+      best: bestUnitPrice(p.id, p.price_try, discount.kind, discount.pct, campaigns),
+    }));
   const totals = cartTotals(
-    lines.map((l) => ({ listPrice: l.product.price_try, quantity: l.quantity })),
+    lines.map((l) => ({ listPrice: l.product.price_try, unitPrice: l.best.unit, quantity: l.quantity })),
     delivery.type ?? 'pickup',
     fee,
-    discount.pct,
   );
-  const discountText = `${DISCOUNT_LABEL[discount.kind]} (%${String(discount.pct).replace('.', ',')})`;
+  const campaignProducts = new Set(campaigns.flatMap((c) => c.products.map((p) => p.product_id)));
 
   const setQty = (id: string, q: number) =>
     setCart((c) => {
@@ -106,32 +121,36 @@ export default function NewOrderScreen() {
                 ? `İlk siparişinize %${String(discount.pct).replace('.', ',')} indirim!`
                 : `Bu siparişte ürünlere %${String(discount.pct).replace('.', ',')} indirim uygulanır.`}
             </Text>
-            <Text style={styles.muted}>İndirim ürünlere uygulanır; kargo ücretine uygulanmaz.</Text>
+            <Text style={styles.muted}>
+              İndirim ürünlere uygulanır; kargo ücretine uygulanmaz. Kampanyalı üründe daha avantajlı olan tek indirim
+              uygulanır.
+            </Text>
           </View>
         ) : null}
 
         <Text style={styles.sectionTitle}>Sepet</Text>
         {lines.length === 0 ? <Text style={[styles.muted, { marginBottom: 8 }]}>Sepetiniz boş.</Text> : null}
-        {lines.map(({ product: p, quantity }) => (
+        {lines.map(({ product: p, quantity, best }) => (
           <View key={p.id} style={styles.card}>
             <Text style={{ fontWeight: '600', color: colors.text }}>
               {p.brand} · {p.name}
             </Text>
             <Text style={styles.muted}>
               {formatKg(p.package_grams)} ·{' '}
-              {discount.pct > 0 ? (
+              {best.unit < p.price_try ? (
                 <>
                   <Text style={{ textDecorationLine: 'line-through' }}>{formatTL(p.price_try)}</Text>{' '}
-                  {formatTL(discountedPrice(p.price_try, discount.pct))}
+                  {formatTL(best.unit)}
                 </>
               ) : (
                 formatTL(p.price_try)
               )}{' '}
               / paket
             </Text>
+            {best.source !== 'none' ? <Text style={{ color: '#1f6f3b' }}>{priceSourceLabel(best)}</Text> : null}
             <Stepper label="Adet" a11yName={`${p.name} adet`} value={quantity} min={0} max={9999} onChange={(q) => setQty(p.id, q)} suffix="adet" />
             <Text style={{ color: colors.text }}>
-              Ara toplam: {formatTL(discountedPrice(p.price_try, discount.pct) * quantity)}
+              Ara toplam: {formatTL(Math.round(best.unit * 100 * quantity) / 100)}
             </Text>
           </View>
         ))}
@@ -154,7 +173,10 @@ export default function NewOrderScreen() {
                       ? ` · ${[p.series, p.flavor, p.age_group].filter(Boolean).join(' · ')}`
                       : ''}
                   </Text>
-                  <Text style={{ color: colors.text, fontWeight: '600' }}>{formatTL(p.price_try)}</Text>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>
+                    {formatTL(p.price_try)}
+                    {campaignProducts.has(p.id) ? <Text style={{ color: '#1f6f3b' }}>  · Kampanyalı</Text> : null}
+                  </Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
@@ -175,12 +197,10 @@ export default function NewOrderScreen() {
 
         <Text style={styles.sectionTitle}>Özet</Text>
         <View style={[styles.card, { gap: 4 }]}>
-          {discount.pct > 0 ? (
+          {totals.discount > 0 ? (
             <>
               <Text style={{ color: colors.text }}>Liste fiyatıyla: {formatTL(totals.list)}</Text>
-              <Text style={{ color: '#1f6f3b' }}>
-                {discountText}: −{formatTL(totals.discount)}
-              </Text>
+              <Text style={{ color: '#1f6f3b' }}>İndirimler: −{formatTL(totals.discount)}</Text>
             </>
           ) : null}
           <Text style={{ color: colors.text }}>Ürünler: {formatTL(totals.items)}</Text>
