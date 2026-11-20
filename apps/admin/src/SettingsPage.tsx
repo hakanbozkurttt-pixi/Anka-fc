@@ -3,9 +3,23 @@ import { formatPrice } from './catalog/model'
 import { parsePrice } from './catalog/rows'
 import { supabase } from './lib/supabase'
 
+type Settings = { shipping_fee_try: number; first_order_discount_pct: number; standard_discount_pct: number }
+
+const tr = (n: number) => n.toFixed(2).replace('.', ',').replace(/,00$/, '')
+
+/** "%20", "20", "12,5" → sayı; geçersizse null */
+function parsePct(value: string): number | null {
+  const v = value.trim().replace('%', '').replace(',', '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(v)) return null
+  const n = Number(v)
+  return n >= 0 && n <= 90 ? n : null
+}
+
 export function SettingsPage() {
-  const [current, setCurrent] = useState<number | null>(null)
-  const [value, setValue] = useState('')
+  const [current, setCurrent] = useState<Settings | null>(null)
+  const [fee, setFee] = useState('')
+  const [firstPct, setFirstPct] = useState('')
+  const [standardPct, setStandardPct] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -13,16 +27,22 @@ export function SettingsPage() {
   useEffect(() => {
     supabase
       ?.from('app_settings')
-      .select('shipping_fee_try')
+      .select('shipping_fee_try, first_order_discount_pct, standard_discount_pct')
       .single()
       .then(({ data, error }) => {
         if (error || !data) {
           setError('Ayarlar yüklenemedi.')
           return
         }
-        const fee = Number(data.shipping_fee_try)
-        setValue(fee.toFixed(2).replace('.', ','))
-        setCurrent(fee)
+        const s: Settings = {
+          shipping_fee_try: Number(data.shipping_fee_try),
+          first_order_discount_pct: Number(data.first_order_discount_pct),
+          standard_discount_pct: Number(data.standard_discount_pct),
+        }
+        setFee(s.shipping_fee_try.toFixed(2).replace('.', ','))
+        setFirstPct(tr(s.first_order_discount_pct))
+        setStandardPct(tr(s.standard_discount_pct))
+        setCurrent(s)
       })
   }, [])
 
@@ -30,23 +50,32 @@ export function SettingsPage() {
     event.preventDefault()
     setError(null)
     setInfo(null)
-    const fee = value.trim() === '0' ? 0 : parsePrice(value)
-    if (fee === null || fee < 0 || fee >= 100000) {
-      setError('Geçerli bir tutar girin (ör. 200 veya 200,00).')
+    const f = fee.trim() === '0' ? 0 : parsePrice(fee)
+    if (f === null || f < 0 || f >= 100000) {
+      setError('Kargo ücreti için geçerli bir tutar girin (ör. 200 veya 200,00).')
+      return
+    }
+    const p1 = parsePct(firstPct)
+    const p2 = parsePct(standardPct)
+    if (p1 === null || p2 === null) {
+      setError('İndirim oranları 0 ile 90 arasında bir sayı olmalı (ör. 20 veya 12,5).')
       return
     }
     setSaving(true)
-    const { error } = await supabase!.from('app_settings').update({ shipping_fee_try: fee }).eq('id', true)
+    const { error } = await supabase!
+      .from('app_settings')
+      .update({ shipping_fee_try: f, first_order_discount_pct: p1, standard_discount_pct: p2 })
+      .eq('id', true)
     setSaving(false)
     if (error) {
       setError('Kaydedilemedi. Lütfen tekrar deneyin.')
       return
     }
-    setCurrent(fee)
-    setInfo('Kargo ücreti kaydedildi. Yeni ücret yalnızca bundan sonra verilen siparişlere uygulanır.')
+    setCurrent({ shipping_fee_try: f, first_order_discount_pct: p1, standard_discount_pct: p2 })
+    setInfo('Ayarlar kaydedildi. Yeni değerler yalnızca bundan sonra verilen siparişlere uygulanır.')
   }
 
-  // Kayıtlı ücret yüklenmeden alan gösterilmez; böylece yazılan değer yüklenen değerle karışmaz.
+  // Kayıtlı değerler yüklenmeden alanlar gösterilmez; böylece yazılan değer yüklenen değerle karışmaz.
   if (current === null) {
     return (
       <>
@@ -60,18 +89,34 @@ export function SettingsPage() {
     <>
       <h1>Ayarlar</h1>
       <form className="card form narrow" onSubmit={save}>
-        <h2>Adrese teslimat kargo ücreti</h2>
-        <p className="muted">
-          Adrese teslimatta siparişe eklenir; hastaneden teslim almada kargo ücreti yoktur.
-          {` Şu anki ücret: ${formatPrice(current)}.`}
-        </p>
         {error ? <p className="status status-error" role="alert">{error}</p> : null}
         {info ? <p className="status status-ok">{info}</p> : null}
+
+        <h2>Adrese teslimat kargo ücreti</h2>
+        <p className="muted">
+          Adrese teslimatta siparişe eklenir; hastaneden teslim almada kargo ücreti yoktur. Şu anki ücret:{' '}
+          {formatPrice(current.shipping_fee_try)}.
+        </p>
         <label>
           Kargo ücreti (TL)
-          <input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" />
+          <input value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" />
         </label>
-        <p className="muted small">Ücret değişirse daha önce verilmiş siparişlerin tutarı değişmez.</p>
+
+        <h2>İndirim oranları</h2>
+        <p className="muted">
+          İndirim yalnızca ürünlere uygulanır, kargo ücretine uygulanmaz. Müşterinin iptal edilmemiş başka siparişi
+          yoksa sipariş “ilk sipariş” sayılır.
+        </p>
+        <label>
+          Yeni müşterinin ilk siparişi (%)
+          <input value={firstPct} onChange={(e) => setFirstPct(e.target.value)} inputMode="decimal" />
+        </label>
+        <label>
+          Sonraki tüm siparişler (%)
+          <input value={standardPct} onChange={(e) => setStandardPct(e.target.value)} inputMode="decimal" />
+        </label>
+
+        <p className="muted small">Değişiklikler daha önce verilmiş siparişlerin tutarını değiştirmez.</p>
         <button type="submit" disabled={saving}>{saving ? 'Kaydediliyor…' : 'Kaydet'}</button>
       </form>
     </>

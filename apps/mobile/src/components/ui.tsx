@@ -158,8 +158,11 @@ export function Stepper({
   max,
   onChange,
   suffix,
+  a11yName,
 }: {
   label: string;
+  /** Ekran okuyucu için ayırt edici ad (ör. ürün adı); verilmezse label kullanılır */
+  a11yName?: string;
   value: number;
   min: number;
   max: number;
@@ -172,20 +175,20 @@ export function Stepper({
       <View style={styles.stepperRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} azalt`}
+          accessibilityLabel={`${a11yName ?? label} azalt`}
           onPress={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           style={[styles.stepperButton, value <= min && { opacity: 0.4 }]}
         >
           <Text style={styles.stepperButtonText}>−</Text>
         </Pressable>
-        <Text style={styles.stepperValue} accessibilityLabel={`${label}: ${value}`}>
+        <Text style={styles.stepperValue} accessibilityLabel={`${a11yName ?? label}: ${value}`}>
           {value}
           {suffix ? ` ${suffix}` : ''}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} artır`}
+          accessibilityLabel={`${a11yName ?? label} artır`}
           onPress={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           style={[styles.stepperButton, value >= max && { opacity: 0.4 }]}

@@ -30,8 +30,10 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 >   yönetici onaylar, iptal eder veya teslim edildi yapar. Kargo ücreti panelde **Ayarlar** sekmesinden değişir.
 >   Durum değişikliğini müşteri uygulamayı açınca bildirim olarak görür.
 >
-> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz sabit indirim, aylık kampanya ve katalog dışı
-> ürün talebi yok.
+> - **İndirim:** yeni müşterinin ilk siparişinde %20, sonraki tüm siparişlerde %10 (yalnızca ürünlere; kargoya değil).
+>   Oranlar panelin **Ayarlar** sekmesinden değiştirilebilir.
+>
+> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz aylık kampanya ve katalog dışı ürün talebi yok.
 
 ---
 
@@ -249,7 +251,7 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
 | Mama takip kayıtları | `food_records` tablosu (paket sayısı, günlük gram, başlangıç, hatırlatma ayarı). Bitiş ve hatırlatma tarihi `food_records_with_schedule` görünümünde, Türkiye saatine göre hesaplanır. Müşteri yalnızca kendi kayıtlarını görür ve değiştirir; yönetici yalnızca okur. |
 | Siparişler | `orders` ve `order_items` tabloları. Fiyatlar ve kargo ücreti sipariş anında siparişe yazılır; sonradan değişmez. Müşteri yalnızca kendi siparişlerini görür; sipariş verme, iptal, teslim şekli değiştirme ve durum değişikliği yalnızca kurallı veritabanı işlemleriyle yapılır (müşteri fiyat veya durumu doğrudan değiştiremez). |
-| Ayarlar | `app_settings` tablosu: adrese teslimat kargo ücreti (başlangıçta 200 TL). Herkes okur, yalnızca yönetici değiştirir. |
+| Ayarlar | `app_settings` tablosu: adrese teslimat kargo ücreti (başlangıçta 200 TL), ilk sipariş indirimi (%20) ve sonraki siparişlerin indirimi (%10). Herkes okur, yalnızca yönetici değiştirir. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 
 - **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.

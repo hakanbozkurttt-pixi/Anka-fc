@@ -44,7 +44,7 @@ Bu maddeler ilgili özellik geliştirilirken otomatik testlere dönüştürülme
 - Sipariş durumu panelde ve müşteri uygulamasında aynı olmalı; durum değişikliğinde
   (Onaylandı, İptal edildi, Teslim edildi) müşteriye bildirim gider.
 
-**İndirim ve kampanya**
+**İndirim ve kampanya** — *sabit indirim geliştirildi (ilk sipariş %20, sonra %10; bkz. docs/kararlar.md); kampanya henüz yok*
 - Tek sabit indirim oranı; kampanya ile aynı üründe geçerliyse müşteri için daha avantajlı olan
   **tek** indirim uygulanır, indirimler birleşmez.
 - Oran/kampanya değişikliği geçmiş siparişlerin fiyatını değiştirmez.

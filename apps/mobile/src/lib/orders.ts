@@ -1,4 +1,4 @@
-import type { DeliveryType, OrderStatus } from './orderCalc';
+import type { DeliveryType, DiscountKind, OrderStatus } from './orderCalc';
 import { supabase } from './supabase';
 
 export type OrderItem = {
@@ -7,6 +7,8 @@ export type OrderItem = {
   brand: string;
   product_name: string;
   package_grams: number;
+  list_price_try: number;
+  discount_pct: number;
   unit_price_try: number;
   quantity: number;
   line_total_try: number;
@@ -21,6 +23,10 @@ export type Order = {
   delivery_address: string | null;
   delivery_date: string | null;
   delivery_time: string | null;
+  discount_kind: DiscountKind;
+  discount_pct: number;
+  items_list_total_try: number;
+  discount_total_try: number;
   items_total_try: number;
   shipping_fee_try: number;
   total_try: number;
@@ -60,11 +66,16 @@ const num = (v: unknown) => Number(v);
 function normalize(o: Order): Order {
   return {
     ...o,
+    discount_pct: num(o.discount_pct),
+    items_list_total_try: num(o.items_list_total_try),
+    discount_total_try: num(o.discount_total_try),
     items_total_try: num(o.items_total_try),
     shipping_fee_try: num(o.shipping_fee_try),
     total_try: num(o.total_try),
     order_items: (o.order_items ?? []).map((i) => ({
       ...i,
+      list_price_try: num(i.list_price_try),
+      discount_pct: num(i.discount_pct),
       unit_price_try: num(i.unit_price_try),
       line_total_try: num(i.line_total_try),
     })),
@@ -104,6 +115,15 @@ export async function getShippingFee(): Promise<number> {
   const { data, error } = await client().from('app_settings').select('shipping_fee_try').single();
   if (error) throw error;
   return num(data.shipping_fee_try);
+}
+
+/** Müşterinin bir sonraki siparişine uygulanacak indirim (ilk sipariş %20, sonra %10; oranlar ayarlardan). */
+export async function getMyDiscount(): Promise<{ kind: DiscountKind; pct: number }> {
+  const { data, error } = await client().rpc('my_order_discount');
+  if (error) throw error;
+  const row = (data as { kind: DiscountKind; pct: number }[])[0];
+  const pct = num(row?.pct ?? 0);
+  return { kind: pct > 0 ? row.kind : 'none', pct };
 }
 
 export async function placeOrder(items: { product_id: string; quantity: number }[], delivery: DeliveryInput) {

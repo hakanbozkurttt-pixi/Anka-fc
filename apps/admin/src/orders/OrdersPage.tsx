@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatPrice } from '../catalog/model'
 import { fetchAll } from '../lib/fetchAll'
 import { supabase } from '../lib/supabase'
-import { ADMIN_ACTIONS, DELIVERY_LABEL, matchesOrder, STATUS_LABEL, type AdminOrder, type OrderStatus } from './model'
+import { ADMIN_ACTIONS, DELIVERY_LABEL, DISCOUNT_LABEL, matchesOrder, STATUS_LABEL, type AdminOrder, type OrderStatus } from './model'
 
 const COLUMNS: string = [
   'id, order_no, status, delivery_type, delivery_address, delivery_date, delivery_time',
+  'discount_kind, discount_pct, items_list_total_try, discount_total_try',
   'items_total_try, shipping_fee_try, total_try, status_changed_at, status_changed_by, created_at',
   'customer:profiles(first_name, last_name, phone, email)',
-  'order_items(id, brand, product_name, package_grams, unit_price_try, quantity, line_total_try)',
+  'order_items(id, brand, product_name, package_grams, list_price_try, unit_price_try, quantity, line_total_try)',
 ].join(', ')
 
 const FILTERS: { id: OrderStatus | 'all'; label: string }[] = [
@@ -55,10 +56,18 @@ export function OrdersPage() {
         setOrders(
           list.map((o) => ({
             ...o,
+            discount_pct: Number(o.discount_pct),
+            items_list_total_try: Number(o.items_list_total_try),
+            discount_total_try: Number(o.discount_total_try),
             items_total_try: Number(o.items_total_try),
             shipping_fee_try: Number(o.shipping_fee_try),
             total_try: Number(o.total_try),
-            order_items: o.order_items.map((i) => ({ ...i, unit_price_try: Number(i.unit_price_try), line_total_try: Number(i.line_total_try) })),
+            order_items: o.order_items.map((i) => ({
+              ...i,
+              list_price_try: Number(i.list_price_try),
+              unit_price_try: Number(i.unit_price_try),
+              line_total_try: Number(i.line_total_try),
+            })),
           })),
         )
         setError(null)
@@ -163,7 +172,8 @@ export function OrdersPage() {
               <tr>
                 <th>Ürün</th>
                 <th className="num">Adet</th>
-                <th className="num">Birim fiyat</th>
+                <th className="num">Liste fiyatı</th>
+                <th className="num">İndirimli fiyat</th>
                 <th className="num">Tutar</th>
               </tr>
             </thead>
@@ -174,22 +184,37 @@ export function OrdersPage() {
                     {i.brand} · {i.product_name} <span className="muted small">({i.package_grams} g)</span>
                   </td>
                   <td className="num">{i.quantity}</td>
+                  <td className="num">{formatPrice(i.list_price_try)}</td>
                   <td className="num">{formatPrice(i.unit_price_try)}</td>
                   <td className="num">{formatPrice(i.line_total_try)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
+              {o.discount_total_try > 0 ? (
+                <>
+                  <tr>
+                    <td colSpan={4}>Liste fiyatıyla</td>
+                    <td className="num">{formatPrice(o.items_list_total_try)}</td>
+                  </tr>
+                  <tr className="discount">
+                    <td colSpan={4}>
+                      {DISCOUNT_LABEL[o.discount_kind]} (%{String(o.discount_pct).replace('.', ',')})
+                    </td>
+                    <td className="num">−{formatPrice(o.discount_total_try)}</td>
+                  </tr>
+                </>
+              ) : null}
               <tr>
-                <td colSpan={3}>Ürünler</td>
+                <td colSpan={4}>Ürünler</td>
                 <td className="num">{formatPrice(o.items_total_try)}</td>
               </tr>
               <tr>
-                <td colSpan={3}>Kargo</td>
+                <td colSpan={4}>Kargo</td>
                 <td className="num">{o.shipping_fee_try > 0 ? formatPrice(o.shipping_fee_try) : 'Yok'}</td>
               </tr>
               <tr className="total">
-                <td colSpan={3}>Toplam</td>
+                <td colSpan={4}>Toplam</td>
                 <td className="num">{formatPrice(o.total_try)}</td>
               </tr>
             </tfoot>

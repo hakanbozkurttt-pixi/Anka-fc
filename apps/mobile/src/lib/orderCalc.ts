@@ -17,14 +17,45 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   cancelled: 'İptal edildi',
 };
 
-export type CartLine = { unitPrice: number; quantity: number };
+export type DiscountKind = 'none' | 'first_order' | 'standard';
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+export const DISCOUNT_LABEL: Record<DiscountKind, string> = {
+  none: 'İndirim',
+  first_order: 'İlk sipariş indirimi',
+  standard: 'İndirim',
+};
 
-export function cartTotals(lines: CartLine[], deliveryType: DeliveryType, shippingFee: number) {
-  const items = round2(lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0));
-  const shipping = deliveryType === 'address' ? round2(shippingFee) : 0;
-  return { items, shipping, total: round2(items + shipping) };
+export type CartLine = { listPrice: number; quantity: number };
+
+const toKurus = (tl: number) => Math.round(tl * 100);
+
+/**
+ * İndirimli birim fiyat, kuruşa yuvarlanır.
+ * Veritabanındaki discounted_price ile aynı kural: round(liste × (100 − oran) / 100, 2)
+ */
+export function discountedPrice(listPrice: number, pct: number): number {
+  return Math.round((toKurus(listPrice) * (100 - pct)) / 100) / 100;
+}
+
+/**
+ * Sipariş özeti. İndirim yalnızca ürünlere uygulanır, kargoya uygulanmaz.
+ * Hesap kuruş üzerinden yapılır (ondalık hatası olmasın diye).
+ */
+export function cartTotals(lines: CartLine[], deliveryType: DeliveryType, shippingFee: number, discountPct = 0) {
+  let listK = 0;
+  let itemsK = 0;
+  for (const l of lines) {
+    listK += toKurus(l.listPrice) * l.quantity;
+    itemsK += toKurus(discountedPrice(l.listPrice, discountPct)) * l.quantity;
+  }
+  const shippingK = deliveryType === 'address' ? toKurus(shippingFee) : 0;
+  return {
+    list: listK / 100,
+    discount: (listK - itemsK) / 100,
+    items: itemsK / 100,
+    shipping: shippingK / 100,
+    total: (itemsK + shippingK) / 100,
+  };
 }
 
 const tl = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

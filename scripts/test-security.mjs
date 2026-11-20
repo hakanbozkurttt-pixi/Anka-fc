@@ -609,10 +609,20 @@ try {
   const tomorrow = trDate(1)
   const order = (client, id) => client.from('orders').select('*, order_items(*)').eq('id', id).single()
   const cart = [{ product_id: catProduct.id, quantity: 2 }, { product_id: pT1.id, quantity: 1 }]
-  const expectedItems = Math.round((p1500price * 2 + Number(pT1.price_try)) * 100) / 100
+  // İndirimli fiyat: veritabanıyla aynı kural (kuruşa yuvarlama)
+  const dp = (list, pct) => Math.round((Math.round(list * 100) * (100 - pct)) / 100) / 100
+  const itemsAt = (pct) => Math.round((dp(p1500price, pct) * 2 + dp(Number(pT1.price_try), pct)) * 100) / 100
+  const listTotal = Math.round((p1500price * 2 + Number(pT1.price_try)) * 100) / 100
+  const firstItems = itemsAt(20) // yeni müşterinin ilk siparişi %20
+  const expectedItems = itemsAt(10) // sonraki siparişler %10
   let pickupId, addressId
 
-  await test('hastaneden teslim alma: kargo ücreti eklenmiyor, fiyatlar sunucuda hesaplanıyor', async () => {
+  await test('indirim önizlemesi: yeni müşteri için ilk sipariş %20', async () => {
+    const { data } = await a.client.rpc('my_order_discount')
+    assert.deepEqual([data[0].kind, Number(data[0].pct)], ['first_order', 20])
+  })
+
+  await test('hastaneden teslim alma: kargo ücreti eklenmiyor; ilk siparişte %20 indirim sunucuda hesaplanıyor', async () => {
     const { data, error } = await a.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
     assert.equal(error, null)
     assert.ok(data.order_no >= 1001)
@@ -620,13 +630,18 @@ try {
     const { data: o } = await order(a.client, pickupId)
     assert.equal(o.status, 'pending')
     assert.equal(Number(o.shipping_fee_try), 0)
-    assert.equal(Number(o.items_total_try), expectedItems)
-    assert.equal(Number(o.total_try), expectedItems)
+    assert.deepEqual([o.discount_kind, Number(o.discount_pct)], ['first_order', 20])
+    assert.equal(Number(o.items_list_total_try), listTotal)
+    assert.equal(Number(o.items_total_try), firstItems)
+    assert.equal(Number(o.discount_total_try), Math.round((listTotal - firstItems) * 100) / 100)
+    assert.equal(Number(o.total_try), firstItems)
     assert.equal(o.delivery_date, null)
     assert.equal(o.order_items.length, 2)
+    const line = o.order_items.find((i) => i.product_id === catProduct.id)
+    assert.deepEqual([Number(line.list_price_try), Number(line.unit_price_try)], [p1500price, dp(p1500price, 20)])
   })
 
-  await test('adrese teslimat: 200 TL kargo ekleniyor; adres, tarih ve saat müşteriden alınıyor', async () => {
+  await test('adrese teslimat: 200 TL kargo ekleniyor (indirimsiz); ikinci siparişte %10; adres, tarih ve saat müşteriden', async () => {
     const { data, error } = await a.client.rpc('place_order', {
       items: cart, delivery_type: 'address', delivery_address: 'Demo Mahallesi, Farklı Sokak No:5',
       delivery_date: tomorrow, delivery_time: '14:30',
@@ -634,6 +649,8 @@ try {
     assert.equal(error, null)
     addressId = data.id
     const { data: o } = await order(a.client, addressId)
+    assert.deepEqual([o.discount_kind, Number(o.discount_pct)], ['standard', 10])
+    assert.equal(Number(o.items_total_try), expectedItems)
     assert.equal(Number(o.shipping_fee_try), 200)
     assert.equal(Number(o.total_try), expectedItems + 200)
     assert.deepEqual([o.delivery_address, o.delivery_date, o.delivery_time], ['Demo Mahallesi, Farklı Sokak No:5', tomorrow, '14:30:00'])
@@ -685,7 +702,37 @@ try {
     await adminClient.from('products').update({ price_try: 999 }).eq('id', pT1.id)
     const { data: o } = await order(a.client, pickupId)
     await adminClient.from('products').update({ price_try: pT1.price_try }).eq('id', pT1.id)
-    assert.equal(Number(o.items_total_try), expectedItems)
+    assert.equal(Number(o.items_total_try), firstItems)
+  })
+
+  await test('ilk sipariş iptal edilirse sonraki sipariş yine ilk sipariş sayılıyor (%20); sonrakiler %10', async () => {
+    const one = await b.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    assert.deepEqual([one.data.discount_kind, Number(one.data.discount_pct)], ['first_order', 20])
+    await b.client.rpc('cancel_order', { order_id: one.data.id })
+    const two = await b.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    assert.deepEqual([two.data.discount_kind, Number(two.data.discount_pct)], ['first_order', 20])
+    const three = await b.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    assert.deepEqual([three.data.discount_kind, Number(three.data.discount_pct)], ['standard', 10])
+    for (const x of [two, three]) await b.client.rpc('cancel_order', { order_id: x.data.id })
+  })
+
+  await test('yönetici indirim oranlarını değiştirebiliyor; yalnızca yeni siparişlere uygulanıyor', async () => {
+    const upd = await adminClient.from('app_settings').update({ standard_discount_pct: 15 }).eq('id', true).select()
+    assert.equal(upd.error, null)
+    const { data } = await a.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    const { data: fresh } = await order(a.client, data.id)
+    const { data: old } = await order(a.client, addressId)
+    await adminClient.from('app_settings').update({ standard_discount_pct: 10 }).eq('id', true)
+    assert.equal(Number(fresh.discount_pct), 15)
+    assert.equal(Number(fresh.items_total_try), itemsAt(15))
+    assert.equal(Number(old.discount_pct), 10)
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('müşteri indirim oranlarını değiştiremiyor', async () => {
+    await a.client.from('app_settings').update({ first_order_discount_pct: 90, standard_discount_pct: 90 }).eq('id', true)
+    const { data } = await service.from('app_settings').select('first_order_discount_pct, standard_discount_pct').single()
+    assert.deepEqual([Number(data.first_order_discount_pct), Number(data.standard_discount_pct)], [20, 10])
   })
 
   await test('onaydan önce teslim şekli değişince kargo ücreti eklenip kalkıyor', async () => {

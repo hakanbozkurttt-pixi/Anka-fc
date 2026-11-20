@@ -7,8 +7,8 @@ import { Button, colors, ErrorBanner, Field, Stepper, styles } from '../../../co
 import { validateDelivery } from '../../../lib/deliveryValidation';
 import { toTurkishError } from '../../../lib/errors';
 import { formatKg } from '../../../lib/food';
-import { cartTotals, formatTL } from '../../../lib/orderCalc';
-import { getShippingFee, listShopProducts, placeOrder, type ShopProduct } from '../../../lib/orders';
+import { cartTotals, discountedPrice, DISCOUNT_LABEL, formatTL, type DiscountKind } from '../../../lib/orderCalc';
+import { getMyDiscount, getShippingFee, listShopProducts, placeOrder, type ShopProduct } from '../../../lib/orders';
 import { getMyProfile } from '../../../lib/profile';
 
 const SPECIES: Record<ShopProduct['species'], string> = { cat: 'Kedi', dog: 'Köpek', both: 'Kedi ve köpek' };
@@ -17,6 +17,7 @@ export default function NewOrderScreen() {
   const { productId } = useLocalSearchParams<{ productId?: string }>();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [fee, setFee] = useState(0);
+  const [discount, setDiscount] = useState<{ kind: DiscountKind; pct: number }>({ kind: 'none', pct: 0 });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -26,10 +27,11 @@ export default function NewOrderScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([listShopProducts(), getShippingFee(), getMyProfile()])
-      .then(([list, f, profile]) => {
+    Promise.all([listShopProducts(), getShippingFee(), getMyProfile(), getMyDiscount()])
+      .then(([list, f, profile, d]) => {
         setProducts(list);
         setFee(f);
+        setDiscount(d);
         // Kayıtlı adres hazır gelir; müşteri bu sipariş için değiştirebilir.
         if (profile) setDelivery((d) => ({ ...d, address: profile.address }));
         if (productId && list.some((p) => p.id === productId)) setCart({ [productId]: 1 });
@@ -48,10 +50,12 @@ export default function NewOrderScreen() {
 
   const lines = products.filter((p) => cart[p.id]).map((p) => ({ product: p, quantity: cart[p.id] }));
   const totals = cartTotals(
-    lines.map((l) => ({ unitPrice: l.product.price_try, quantity: l.quantity })),
+    lines.map((l) => ({ listPrice: l.product.price_try, quantity: l.quantity })),
     delivery.type ?? 'pickup',
     fee,
+    discount.pct,
   );
+  const discountText = `${DISCOUNT_LABEL[discount.kind]} (%${String(discount.pct).replace('.', ',')})`;
 
   const setQty = (id: string, q: number) =>
     setCart((c) => {
@@ -95,6 +99,16 @@ export default function NewOrderScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={formError} />
+        {discount.pct > 0 ? (
+          <View style={{ backgroundColor: '#e3f1ea', borderRadius: 8, padding: 12 }}>
+            <Text style={{ color: colors.text, fontWeight: '600' }}>
+              {discount.kind === 'first_order'
+                ? `İlk siparişinize %${String(discount.pct).replace('.', ',')} indirim!`
+                : `Bu siparişte ürünlere %${String(discount.pct).replace('.', ',')} indirim uygulanır.`}
+            </Text>
+            <Text style={styles.muted}>İndirim ürünlere uygulanır; kargo ücretine uygulanmaz.</Text>
+          </View>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Sepet</Text>
         {lines.length === 0 ? <Text style={[styles.muted, { marginBottom: 8 }]}>Sepetiniz boş.</Text> : null}
@@ -104,10 +118,21 @@ export default function NewOrderScreen() {
               {p.brand} · {p.name}
             </Text>
             <Text style={styles.muted}>
-              {formatKg(p.package_grams)} · {formatTL(p.price_try)} / paket
+              {formatKg(p.package_grams)} ·{' '}
+              {discount.pct > 0 ? (
+                <>
+                  <Text style={{ textDecorationLine: 'line-through' }}>{formatTL(p.price_try)}</Text>{' '}
+                  {formatTL(discountedPrice(p.price_try, discount.pct))}
+                </>
+              ) : (
+                formatTL(p.price_try)
+              )}{' '}
+              / paket
             </Text>
-            <Stepper label={`${p.name} adet`} value={quantity} min={0} max={9999} onChange={(q) => setQty(p.id, q)} suffix="adet" />
-            <Text style={{ color: colors.text }}>Ara toplam: {formatTL(p.price_try * quantity)}</Text>
+            <Stepper label="Adet" a11yName={`${p.name} adet`} value={quantity} min={0} max={9999} onChange={(q) => setQty(p.id, q)} suffix="adet" />
+            <Text style={{ color: colors.text }}>
+              Ara toplam: {formatTL(discountedPrice(p.price_try, discount.pct) * quantity)}
+            </Text>
           </View>
         ))}
 
@@ -150,6 +175,14 @@ export default function NewOrderScreen() {
 
         <Text style={styles.sectionTitle}>Özet</Text>
         <View style={[styles.card, { gap: 4 }]}>
+          {discount.pct > 0 ? (
+            <>
+              <Text style={{ color: colors.text }}>Liste fiyatıyla: {formatTL(totals.list)}</Text>
+              <Text style={{ color: '#1f6f3b' }}>
+                {discountText}: −{formatTL(totals.discount)}
+              </Text>
+            </>
+          ) : null}
           <Text style={{ color: colors.text }}>Ürünler: {formatTL(totals.items)}</Text>
           <Text style={{ color: colors.text }}>
             Kargo: {delivery.type === 'address' ? formatTL(totals.shipping) : 'Yok'}

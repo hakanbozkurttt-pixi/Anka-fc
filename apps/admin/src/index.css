@@ -483,3 +483,11 @@ button.small {
   background: #fde2e1;
   color: #b42318;
 }
+
+.order-card tr.discount td {
+  color: #1f6f3b;
+}
+
+.form h2 {
+  margin-top: 8px;
+}

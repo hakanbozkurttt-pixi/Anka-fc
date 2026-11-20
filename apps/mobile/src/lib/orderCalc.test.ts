@@ -4,11 +4,13 @@ process.env.TZ = 'Europe/Istanbul';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { cartTotals, deliveryTimeError, parseTime } from './orderCalc.ts';
+import { cartTotals, deliveryTimeError, discountedPrice, parseTime } from './orderCalc.ts';
 import { orderNotices, type OrderStatusRow } from './orderNotices.ts';
 
 test('hastaneden teslim almada kargo ücreti eklenmez', () => {
-  assert.deepEqual(cartTotals([{ unitPrice: 120.75, quantity: 2 }, { unitPrice: 100, quantity: 1 }], 'pickup', 200), {
+  assert.deepEqual(cartTotals([{ listPrice: 120.75, quantity: 2 }, { listPrice: 100, quantity: 1 }], 'pickup', 200), {
+    list: 341.5,
+    discount: 0,
     items: 341.5,
     shipping: 0,
     total: 341.5,
@@ -16,8 +18,25 @@ test('hastaneden teslim almada kargo ücreti eklenmez', () => {
 });
 
 test('adrese teslimatta ayarlardaki kargo ücreti eklenir (200 TL veya yöneticinin belirlediği)', () => {
-  assert.equal(cartTotals([{ unitPrice: 100, quantity: 1 }], 'address', 200).total, 300);
-  assert.equal(cartTotals([{ unitPrice: 100, quantity: 1 }], 'address', 250).total, 350);
+  assert.equal(cartTotals([{ listPrice: 100, quantity: 1 }], 'address', 200).total, 300);
+  assert.equal(cartTotals([{ listPrice: 100, quantity: 1 }], 'address', 250).total, 350);
+});
+
+test('indirimli birim fiyat kuruşa yuvarlanır (veritabanıyla aynı)', () => {
+  assert.equal(discountedPrice(250.5, 20), 200.4);
+  assert.equal(discountedPrice(250.5, 10), 225.45);
+  assert.equal(discountedPrice(99.99, 10), 89.99); // 89,991 → 89,99
+  assert.equal(discountedPrice(0.05, 10), 0.05); // 0,045 → 0,05 (yarım yukarı)
+});
+
+test('ilk sipariş %20: indirim yalnızca ürünlere, kargoya uygulanmaz', () => {
+  const t = cartTotals([{ listPrice: 250.5, quantity: 2 }, { listPrice: 1000, quantity: 1 }], 'address', 200, 20);
+  assert.deepEqual(t, { list: 1501, discount: 300.2, items: 1200.8, shipping: 200, total: 1400.8 });
+});
+
+test('sonraki siparişler %10', () => {
+  const t = cartTotals([{ listPrice: 250.5, quantity: 2 }, { listPrice: 1000, quantity: 1 }], 'pickup', 200, 10);
+  assert.deepEqual(t, { list: 1501, discount: 150.1, items: 1350.9, shipping: 0, total: 1350.9 });
 });
 
 test('saat okuma', () => {

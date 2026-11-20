@@ -8,7 +8,7 @@ import { Button, colors, ErrorBanner, InfoBanner, styles } from '../../../compon
 import { validateDelivery } from '../../../lib/deliveryValidation';
 import { toTurkishError } from '../../../lib/errors';
 import { formatKg } from '../../../lib/food';
-import { DELIVERY_LABEL, formatTL } from '../../../lib/orderCalc';
+import { DELIVERY_LABEL, DISCOUNT_LABEL, formatTL } from '../../../lib/orderCalc';
 import {
   answerNewPackage,
   cancelOrder,
@@ -174,7 +174,13 @@ export default function OrderDetailScreen() {
               {i.brand} · {i.product_name}
             </Text>
             <Text style={styles.muted}>
-              {formatKg(i.package_grams)} · {i.quantity} × {formatTL(i.unit_price_try)} = {formatTL(i.line_total_try)}
+              {formatKg(i.package_grams)} · {i.quantity} ×{' '}
+              {i.discount_pct > 0 ? (
+                <>
+                  <Text style={{ textDecorationLine: 'line-through' }}>{formatTL(i.list_price_try)}</Text>{' '}
+                </>
+              ) : null}
+              {formatTL(i.unit_price_try)} = {formatTL(i.line_total_try)}
             </Text>
           </View>
         ))}
@@ -202,6 +208,15 @@ export default function OrderDetailScreen() {
 
         <Text style={styles.sectionTitle}>Tutar</Text>
         <View style={{ gap: 2 }}>
+          {order.discount_total_try > 0 ? (
+            <>
+              <Text style={{ color: colors.text }}>Liste fiyatıyla: {formatTL(order.items_list_total_try)}</Text>
+              <Text style={{ color: '#1f6f3b' }}>
+                {DISCOUNT_LABEL[order.discount_kind]} (%{String(order.discount_pct).replace('.', ',')}): −
+                {formatTL(order.discount_total_try)}
+              </Text>
+            </>
+          ) : null}
           <Text style={{ color: colors.text }}>Ürünler: {formatTL(order.items_total_try)}</Text>
           <Text style={{ color: colors.text }}>
             Kargo: {order.shipping_fee_try > 0 ? formatTL(order.shipping_fee_try) : 'Yok'}

@@ -24,6 +24,17 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
 - Mama bitince sayaç **aynı paketle kendiliğinden yeniden** başlar. "Yeni paketi kullanmaya başladım" sayacı bugünden başlatır.
 - Hatırlatma sipariş oluşturmaz.
 
+## İndirim — 20.11.2026 (değişti)
+- Gereksinim belgesindeki "tek sabit oran" yerine iki oran:
+  - **Yeni müşterinin ilk siparişi: %20.**
+  - **Sonraki tüm siparişler (tüm müşteriler): %10.**
+- "İlk sipariş": müşterinin iptal edilmemiş başka siparişi yoksa. İlk sipariş iptal edilirse sonraki sipariş yine ilk sipariş sayılır.
+- İndirim yalnızca ürünlere uygulanır; kargo ücretine uygulanmaz. İndirimli birim fiyat kuruşa yuvarlanır.
+- İki oranı da yönetici panelin **Ayarlar** sekmesinden değiştirebilir; değişiklik yalnızca yeni siparişlere uygulanır.
+- Ürün listesinde liste fiyatı; sepette ve sipariş özetinde indirimli fiyat ve indirim tutarı gösterilir.
+- Aylık kampanyalar henüz yok. Geldiğinde: aynı üründe kampanya ve sabit indirim birlikte geçerliyse müşteri için daha
+  avantajlı olan tek indirim uygulanır (gereksinim belgesi).
+
 ## Bildirimler — 20.11.2026 (değişti)
 - Mama hatırlatmaları **telefonun kendisi tarafından** zamanında gösterilir (yerel bildirim). Sunucudan gönderim,
   Firebase veya Apple bildirim hesabı gerekmez. Hatırlatma saati 10:00.

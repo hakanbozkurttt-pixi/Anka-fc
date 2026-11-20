@@ -27,6 +27,12 @@ export const ADMIN_ACTIONS: Record<OrderStatus, { status: OrderStatus; label: st
   cancelled: [],
 }
 
+export const DISCOUNT_LABEL = {
+  none: 'İndirim',
+  first_order: 'İlk sipariş indirimi',
+  standard: 'İndirim',
+} as const
+
 export type AdminOrder = {
   id: string
   order_no: number
@@ -35,6 +41,10 @@ export type AdminOrder = {
   delivery_address: string | null
   delivery_date: string | null
   delivery_time: string | null
+  discount_kind: 'none' | 'first_order' | 'standard'
+  discount_pct: number
+  items_list_total_try: number
+  discount_total_try: number
   items_total_try: number
   shipping_fee_try: number
   total_try: number
@@ -47,6 +57,7 @@ export type AdminOrder = {
     brand: string
     product_name: string
     package_grams: number
+    list_price_try: number
     unit_price_try: number
     quantity: number
     line_total_try: number
