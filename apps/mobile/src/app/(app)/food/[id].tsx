@@ -8,6 +8,7 @@ import { SchedulePreview } from '../../../components/SchedulePreview';
 import { Button, ErrorBanner, Field, InfoBanner, Stepper, styles } from '../../../components/ui';
 import { toTurkishError } from '../../../lib/errors';
 import { deleteFoodRecord, getFoodRecord, updateFoodRecord, type FoodRecord } from '../../../lib/food';
+import { syncReminders } from '../../../lib/reminders';
 import { formatTurkishDate, todayLocalIso } from '../../../lib/validation';
 
 function confirm(title: string, message: string, ok: string): Promise<boolean> {
@@ -62,6 +63,7 @@ export default function FoodDetailScreen() {
     setInfo(null);
     try {
       await updateFoodRecord(id, changes);
+      syncReminders();
       apply(await getFoodRecord(id));
       setInfo(message);
     } catch (e) {
@@ -107,6 +109,7 @@ export default function FoodDetailScreen() {
     if (!ok) return;
     try {
       await deleteFoodRecord(id);
+      syncReminders();
       router.back();
     } catch (e) {
       setError(toTurkishError(e as Error));

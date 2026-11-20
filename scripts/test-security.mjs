@@ -587,6 +587,16 @@ try {
     assert.equal(r.daily_grams, 60)
   })
 
+  await test('hatırlatma bildirimi için mama kaydıyla birlikte hayvan adı okunabiliyor', async () => {
+    const { data, error } = await a.client
+      .from('food_records_with_schedule')
+      .select('id, brand, product_name, start_date, total_grams, daily_grams, reminder_enabled, reminder_days_before, pets(name)')
+      .eq('id', recordId)
+      .single()
+    assert.equal(error, null)
+    assert.equal(data.pets.name, 'Pamuk')
+  })
+
   await test('müşteri mama kaydını silebiliyor', async () => {
     await a.client.from('food_records').delete().eq('id', recordId)
     const { data } = await service.from('food_records').select('id').eq('id', recordId)

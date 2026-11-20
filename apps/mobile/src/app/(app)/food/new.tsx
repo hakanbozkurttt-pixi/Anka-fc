@@ -8,6 +8,7 @@ import { Button, colors, ErrorBanner, Field, Stepper, styles } from '../../../co
 import { toTurkishError } from '../../../lib/errors';
 import { createFoodRecord, formatKg, listCatalogFor, type CatalogProduct } from '../../../lib/food';
 import { DEFAULT_REMINDER_DAYS } from '../../../lib/foodSchedule';
+import { syncReminders } from '../../../lib/reminders';
 import { formatTurkishDate, parseTurkishDate, todayLocalIso } from '../../../lib/validation';
 
 type Errors = Partial<Record<'product' | 'daily' | 'start', string>>;
@@ -74,6 +75,7 @@ export default function NewFoodScreen() {
         reminder_enabled: reminderEnabled,
         reminder_days_before: reminderDays,
       });
+      syncReminders();
       router.back();
     } catch (e) {
       setFormError(toTurkishError(e as Error));

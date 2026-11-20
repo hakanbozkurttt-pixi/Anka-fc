@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { cancelAllReminders } from './reminders';
 import { supabase } from './supabase';
 
 type AuthState = {
@@ -36,7 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      // Çıkış yapılınca bu telefondaki hatırlatmalar silinir (başka kişi aynı telefonu kullanabilir).
+      if (event === 'SIGNED_OUT') cancelAllReminders();
       setSession(next);
       setLoading(false);
     });

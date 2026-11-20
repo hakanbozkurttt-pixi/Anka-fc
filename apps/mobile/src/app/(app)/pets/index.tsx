@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { NotificationPermissionBanner } from '../../../components/NotificationPermissionBanner';
 import { Button, colors, ErrorBanner, styles as ui } from '../../../components/ui';
 import { toTurkishError } from '../../../lib/errors';
 import { listPets, SPECIES_LABEL, type Pet } from '../../../lib/pets';
@@ -56,6 +57,7 @@ export default function PetsScreen() {
             {profile ? `Merhaba ${profile.first_name}` : 'Müşteri profili bulunamadı.'}
           </Text>
           <ErrorBanner message={error} />
+          <NotificationPermissionBanner />
         </View>
       }
       ListEmptyComponent={
