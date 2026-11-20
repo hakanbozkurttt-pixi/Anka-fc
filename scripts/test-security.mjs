@@ -602,8 +602,192 @@ try {
     const { data } = await service.from('food_records').select('id').eq('id', recordId)
     assert.equal(data.length, 0)
   })
+
+  console.log('Sipariş ve teslimat')
+  const { data: pT1 } = await service.from('products').select('id, price_try').eq('code', `TEST-${run}-T1`).single()
+  const p1500price = Number((await service.from('products').select('price_try').eq('id', catProduct.id).single()).data.price_try)
+  const tomorrow = trDate(1)
+  const order = (client, id) => client.from('orders').select('*, order_items(*)').eq('id', id).single()
+  const cart = [{ product_id: catProduct.id, quantity: 2 }, { product_id: pT1.id, quantity: 1 }]
+  const expectedItems = Math.round((p1500price * 2 + Number(pT1.price_try)) * 100) / 100
+  let pickupId, addressId
+
+  await test('hastaneden teslim alma: kargo ücreti eklenmiyor, fiyatlar sunucuda hesaplanıyor', async () => {
+    const { data, error } = await a.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    assert.equal(error, null)
+    assert.ok(data.order_no >= 1001)
+    pickupId = data.id
+    const { data: o } = await order(a.client, pickupId)
+    assert.equal(o.status, 'pending')
+    assert.equal(Number(o.shipping_fee_try), 0)
+    assert.equal(Number(o.items_total_try), expectedItems)
+    assert.equal(Number(o.total_try), expectedItems)
+    assert.equal(o.delivery_date, null)
+    assert.equal(o.order_items.length, 2)
+  })
+
+  await test('adrese teslimat: 200 TL kargo ekleniyor; adres, tarih ve saat müşteriden alınıyor', async () => {
+    const { data, error } = await a.client.rpc('place_order', {
+      items: cart, delivery_type: 'address', delivery_address: 'Demo Mahallesi, Farklı Sokak No:5',
+      delivery_date: tomorrow, delivery_time: '14:30',
+    })
+    assert.equal(error, null)
+    addressId = data.id
+    const { data: o } = await order(a.client, addressId)
+    assert.equal(Number(o.shipping_fee_try), 200)
+    assert.equal(Number(o.total_try), expectedItems + 200)
+    assert.deepEqual([o.delivery_address, o.delivery_date, o.delivery_time], ['Demo Mahallesi, Farklı Sokak No:5', tomorrow, '14:30:00'])
+  })
+
+  await test('adrese teslimatta adres, tarih/saat eksik veya geçmiş zaman reddediliyor', async () => {
+    const base = { items: cart, delivery_type: 'address', delivery_address: 'Demo adres No:1', delivery_date: tomorrow, delivery_time: '10:00' }
+    const noAddr = await a.client.rpc('place_order', { ...base, delivery_address: '' })
+    const noDate = await a.client.rpc('place_order', { ...base, delivery_date: null })
+    const past = await a.client.rpc('place_order', { ...base, delivery_date: trDate(-1) })
+    assert.match(noAddr.error?.message ?? '', /adres girin/)
+    assert.match(noDate.error?.message ?? '', /tarihi ve saati girin/)
+    assert.match(past.error?.message ?? '', /ileri bir zaman/)
+  })
+
+  await test('geçersiz sepetler reddediliyor (boş, pasif ürün, adet 0, aynı ürün iki kez)', async () => {
+    const r = await Promise.all([
+      a.client.rpc('place_order', { items: [], delivery_type: 'pickup' }),
+      a.client.rpc('place_order', { items: [{ product_id: passiveProduct.id, quantity: 1 }], delivery_type: 'pickup' }),
+      a.client.rpc('place_order', { items: [{ product_id: catProduct.id, quantity: 0 }], delivery_type: 'pickup' }),
+      a.client.rpc('place_order', { items: [{ product_id: catProduct.id, quantity: 1 }, { product_id: catProduct.id, quantity: 1 }], delivery_type: 'pickup' }),
+    ])
+    r.forEach((x) => assert.ok(x.error))
+  })
+
+  await test('yönetici kargo ücretini değiştirebiliyor; yeni ücret yalnızca yeni siparişlere uygulanıyor', async () => {
+    const upd = await adminClient.from('app_settings').update({ shipping_fee_try: 250 }).eq('id', true).select()
+    assert.equal(upd.error, null)
+    const { data } = await a.client.rpc('place_order', {
+      items: cart, delivery_type: 'address', delivery_address: 'Demo adres No:2', delivery_date: tomorrow, delivery_time: '11:00',
+    })
+    const { data: fresh } = await order(a.client, data.id)
+    const { data: old } = await order(a.client, addressId)
+    await adminClient.from('app_settings').update({ shipping_fee_try: 200 }).eq('id', true)
+    assert.equal(Number(fresh.shipping_fee_try), 250)
+    assert.equal(Number(old.shipping_fee_try), 200)
+    await a.client.rpc('cancel_order', { order_id: data.id })
+  })
+
+  await test('müşteri kargo ücretini okuyabiliyor ama değiştiremiyor', async () => {
+    const { data } = await a.client.from('app_settings').select('shipping_fee_try').single()
+    assert.equal(Number(data.shipping_fee_try), 200)
+    await a.client.from('app_settings').update({ shipping_fee_try: 0 }).eq('id', true)
+    const { data: after } = await service.from('app_settings').select('shipping_fee_try').single()
+    assert.equal(Number(after.shipping_fee_try), 200)
+  })
+
+  await test('katalog fiyatı sonradan değişse de verilmiş siparişin fiyatı değişmiyor', async () => {
+    await adminClient.from('products').update({ price_try: 999 }).eq('id', pT1.id)
+    const { data: o } = await order(a.client, pickupId)
+    await adminClient.from('products').update({ price_try: pT1.price_try }).eq('id', pT1.id)
+    assert.equal(Number(o.items_total_try), expectedItems)
+  })
+
+  await test('onaydan önce teslim şekli değişince kargo ücreti eklenip kalkıyor', async () => {
+    await a.client.rpc('update_order_delivery', { order_id: addressId, delivery_type: 'pickup' })
+    let { data: o } = await order(a.client, addressId)
+    assert.deepEqual([Number(o.shipping_fee_try), o.delivery_address], [0, null])
+    await a.client.rpc('update_order_delivery', {
+      order_id: addressId, delivery_type: 'address', delivery_address: 'Demo adres No:3', delivery_date: tomorrow, delivery_time: '16:00',
+    })
+    ;({ data: o } = await order(a.client, addressId))
+    assert.deepEqual([Number(o.shipping_fee_try), Number(o.total_try)], [200, expectedItems + 200])
+  })
+
+  await test('müşteri siparişlere doğrudan yazamıyor (durum, fiyat)', async () => {
+    const ins = await a.client.from('orders').insert({ customer_id: a.data.user.id, delivery_type: 'pickup', items_total_try: 0, shipping_fee_try: 0, total_try: 0 })
+    assert.ok(ins.error)
+    await a.client.from('orders').update({ status: 'approved', total_try: 1 }).eq('id', pickupId)
+    const { data: o } = await order(a.client, pickupId)
+    assert.equal(o.status, 'pending')
+  })
+
+  await test('başka müşteri siparişi göremiyor ve iptal edemiyor', async () => {
+    const seen = await b.client.from('orders').select('id').eq('id', pickupId)
+    const items = await b.client.from('order_items').select('id').eq('order_id', pickupId)
+    assert.equal(seen.data.length, 0)
+    assert.equal(items.data.length, 0)
+    const c = await b.client.rpc('cancel_order', { order_id: pickupId })
+    assert.ok(c.error)
+  })
+
+  await test('müşteri onay veremiyor; yönetici onaylayabiliyor', async () => {
+    const r = await a.client.rpc('admin_set_order_status', { order_id: pickupId, new_status: 'approved' })
+    assert.ok(r.error)
+    const ok = await adminClient.rpc('admin_set_order_status', { order_id: pickupId, new_status: 'approved' })
+    assert.equal(ok.error, null)
+    const { data: o } = await order(a.client, pickupId)
+    assert.deepEqual([o.status, o.status_changed_by], ['approved', 'admin'])
+  })
+
+  await test('onaydan sonra müşteri iptal edemiyor ve teslim şeklini değiştiremiyor', async () => {
+    const c = await a.client.rpc('cancel_order', { order_id: pickupId })
+    const u = await a.client.rpc('update_order_delivery', { order_id: pickupId, delivery_type: 'pickup' })
+    assert.match(c.error?.message ?? '', /hastaneyle iletişime/)
+    assert.match(u.error?.message ?? '', /hastaneyle iletişime/)
+  })
+
+  await test('"Teslim aldım" yalnızca onaylanmış siparişte; durum panelle aynı', async () => {
+    const early = await a.client.rpc('confirm_received', { order_id: addressId })
+    assert.ok(early.error)
+    const ok = await a.client.rpc('confirm_received', { order_id: pickupId })
+    assert.equal(ok.error, null)
+    const { data: forCustomer } = await order(a.client, pickupId)
+    const { data: forAdmin } = await order(adminClient, pickupId)
+    assert.deepEqual([forCustomer.status, forAdmin.status, forAdmin.status_changed_by], ['delivered', 'delivered', 'customer'])
+  })
+
+  await test('geçersiz durum geçişleri reddediliyor', async () => {
+    const back = await adminClient.rpc('admin_set_order_status', { order_id: pickupId, new_status: 'approved' })
+    const jump = await adminClient.rpc('admin_set_order_status', { order_id: addressId, new_status: 'delivered' })
+    assert.ok(back.error)
+    assert.ok(jump.error)
+  })
+
+  await test('müşteri onay bekleyen siparişi iptal edebiliyor; yönetici onaylı siparişi iptal edebiliyor', async () => {
+    const c = await a.client.rpc('cancel_order', { order_id: addressId })
+    assert.equal(c.error, null)
+    const { data } = await a.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    await adminClient.rpc('admin_set_order_status', { order_id: data.id, new_status: 'approved' })
+    const x = await adminClient.rpc('admin_set_order_status', { order_id: data.id, new_status: 'cancelled' })
+    assert.equal(x.error, null)
+  })
+
+  await test('teslimattan sonra "yeni paketi başlattım": mama sayacı bugünden, siparişteki adetle başlıyor', async () => {
+    const { data: rec } = await a.client
+      .from('food_records')
+      .insert({ pet_id: pamuk.id, product_id: catProduct.id, daily_grams: 60, start_date: trDate(-10) })
+      .select('id')
+      .single()
+    const { data: o } = await order(a.client, pickupId)
+    const item = o.order_items.find((i) => i.product_id === catProduct.id)
+    const { data: n, error } = await a.client.rpc('answer_new_package', { order_item_id: item.id, answer: 'started' })
+    assert.equal(error, null)
+    assert.equal(n, 1)
+    const { data: r } = await view(a.client, rec.id)
+    assert.deepEqual([r.start_date, r.package_count, r.supply_days], [trDate(0), 2, 50])
+    await a.client.from('food_records').delete().eq('id', rec.id)
+  })
+
+  await test('teslim edilmemiş siparişte "yeni paket" sorusu cevaplanamıyor', async () => {
+    const { data } = await a.client.rpc('place_order', { items: cart, delivery_type: 'pickup' })
+    const { data: o } = await order(a.client, data.id)
+    const r = await a.client.rpc('answer_new_package', { order_item_id: o.order_items[0].id, answer: 'started' })
+    assert.ok(r.error)
+  })
+
+  await test('yönetici tüm siparişleri görüyor', async () => {
+    const { data } = await adminClient.from('orders').select('id').eq('customer_id', a.data.user.id)
+    assert.ok(data.length >= 4)
+  })
 } finally {
-  // Test ürünlerini ve görsellerini temizle
+  // Test siparişlerini, ürünlerini ve görsellerini temizle
+  await service.from('orders').delete().in('customer_id', createdUserIds)
   if (createdProductIds.length) await service.from('products').delete().in('id', createdProductIds)
   if (createdImagePaths.length) await service.storage.from('product-images').remove(createdImagePaths)
   // Demo kullanıcılarını temizle (profiller ve hayvanlar zincirleme silinir).

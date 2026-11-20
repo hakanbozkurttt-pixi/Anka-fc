@@ -23,7 +23,9 @@ export function toTurkishError(error: ErrorLike): string {
     return 'Kod hatalı veya süresi dolmuş. Yeni kod isteyebilirsiniz.';
   if (code === 'same_password' || /should be different from the old password/i.test(message))
     return 'Yeni şifre eski şifrenizle aynı olamaz.';
-  if (/katalogda bulunamadı|bugünden sonra olamaz/i.test(message)) return message;
+  // Veritabanının kendi Türkçe açıklamaları (sipariş ve mama kuralları) olduğu gibi gösterilir.
+  if (/katalogda bulunamadı|bugünden sonra olamaz|sepet|satışta değil|adres girin|tarihi ve saati|ileri bir zaman|90 gün|hastaneyle iletişime|teslim aldım|yalnızca teslim edilen|adedi/i.test(message))
+    return message;
   if (code === 'signup_disabled') return 'Yeni kayıt şu anda kapalı.';
   if (/database error saving new user/i.test(message))
     return 'Kayıt bilgileri kaydedilemedi. Lütfen tüm alanları kontrol edin.';

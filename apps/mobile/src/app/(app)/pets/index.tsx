@@ -81,7 +81,10 @@ export default function PetsScreen() {
       ListFooterComponent={
         <View style={{ marginTop: 8 }}>
           {profile ? (
-            <Button title="Kedi veya köpek ekle" onPress={() => router.push('/pets/new')} />
+            <>
+              <Button title="Kedi veya köpek ekle" onPress={() => router.push('/pets/new')} />
+              <Button title="Siparişlerim" variant="secondary" onPress={() => router.push('/orders')} />
+            </>
           ) : null}
           <Button title="Çıkış yap" variant="secondary" onPress={() => supabase?.auth.signOut()} />
         </View>

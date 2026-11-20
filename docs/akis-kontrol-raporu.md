@@ -12,9 +12,9 @@ Kontrol yalnızca yerel deneme ortamında, açıkça demo olarak işaretlenmiş 
 | Mama takibi, 25 gün hesabı, 5 gün önce hatırlatma | Geliştirildi ve test edildi (20.11.2026, aşağıya bakın) |
 | Telefona bildirim gönderimi | **Henüz geliştirilmedi** (hatırlatma tarihi hesaplanıyor) |
 | Bildirimin otomatik sipariş oluşturmaması | Hatırlatma hiçbir sipariş kaydı oluşturmuyor (sipariş özelliği henüz yok) |
-| Sipariş, teslim şekli, 200 TL kargo | **Henüz geliştirilmedi** |
-| Sipariş onayı, tedarikçi teyidi, 3 iş günü | **Henüz geliştirilmedi** |
-| Panel ↔ müşteri sipariş durumu tutarlılığı | **Henüz geliştirilmedi** |
+| Sipariş, teslim şekli, kargo (200 TL, yönetici değiştirebilir) | Geliştirildi ve test edildi (20.11.2026) |
+| Sipariş onayı | Geliştirildi. Karar gereği tüm ürünler stokta kabul edilir; tedarikçi teyidi ve 3 iş günü adımı yok |
+| Panel ↔ müşteri sipariş durumu tutarlılığı | Test edildi: iki tarafta aynı durum |
 | Sabit indirim ve aylık kampanya | **Henüz geliştirilmedi** |
 
 ## Sonraki aşamalar için kabul kriterleri (gereksinim belgesine göre)

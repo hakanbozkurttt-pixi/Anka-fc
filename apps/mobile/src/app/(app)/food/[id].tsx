@@ -139,6 +139,10 @@ export default function FoodDetailScreen() {
               </Text>
             </View>
 
+            <Button
+              title="Bu mamadan sipariş ver"
+              onPress={() => router.push({ pathname: '/orders/new', params: { productId: record.product_id } })}
+            />
             <Button title="Yeni paketi kullanmaya başladım" variant="secondary" onPress={handleNewPackage} />
 
             <Text style={styles.sectionTitle}>Ayarlar</Text>

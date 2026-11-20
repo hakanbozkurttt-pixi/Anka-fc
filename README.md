@@ -23,8 +23,15 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 >   kendiliğinden yeniden başlar; "Yeni paketi kullanmaya başladım" sayacı bugünden başlatır. Birden fazla pakette
 >   toplam gram günlük grama bölünür. Hatırlatma sipariş oluşturmaz. Panelde müşterilerin mama kayıtları görünür.
 >
-> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz telefona bildirim gönderimi, sipariş, kargo,
-> indirim ve kampanya özelliği yok (hatırlatma tarihi hesaplanıyor ama telefona bildirim olarak gitmiyor).
+> - **Hatırlatma bildirimleri:** telefonun kendisi, hatırlatma günü saat 10:00'da gösterir (ek hesap gerekmez).
+> - **Sipariş:** müşteri katalogdan sepet oluşturur; hastaneden teslim almayı (kargo yok) veya adrese teslimatı
+>   (kargo ücreti, adres, tarih ve saat müşteriden) seçer. Onaydan önce iptal edebilir veya teslim şeklini
+>   değiştirebilir; onaydan sonra "Teslim aldım" diyebilir. Panelde siparişler durumlarına göre listelenir;
+>   yönetici onaylar, iptal eder veya teslim edildi yapar. Kargo ücreti panelde **Ayarlar** sekmesinden değişir.
+>   Durum değişikliğini müşteri uygulamayı açınca bildirim olarak görür.
+>
+> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz sabit indirim, aylık kampanya ve katalog dışı
+> ürün talebi yok.
 
 ---
 
@@ -241,6 +248,8 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | Ürün kataloğu | `products` tablosu. Her paket boyutu ayrı satır. Stok ve günlük tüketim bilgisi tutulmaz. Yalnızca yönetici ekler/değiştirir; müşteriler yalnızca aktif ürünleri görebilir. |
 | Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
 | Mama takip kayıtları | `food_records` tablosu (paket sayısı, günlük gram, başlangıç, hatırlatma ayarı). Bitiş ve hatırlatma tarihi `food_records_with_schedule` görünümünde, Türkiye saatine göre hesaplanır. Müşteri yalnızca kendi kayıtlarını görür ve değiştirir; yönetici yalnızca okur. |
+| Siparişler | `orders` ve `order_items` tabloları. Fiyatlar ve kargo ücreti sipariş anında siparişe yazılır; sonradan değişmez. Müşteri yalnızca kendi siparişlerini görür; sipariş verme, iptal, teslim şekli değiştirme ve durum değişikliği yalnızca kurallı veritabanı işlemleriyle yapılır (müşteri fiyat veya durumu doğrudan değiştiremez). |
+| Ayarlar | `app_settings` tablosu: adrese teslimat kargo ücreti (başlangıçta 200 TL). Herkes okur, yalnızca yönetici değiştirir. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 
 - **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.

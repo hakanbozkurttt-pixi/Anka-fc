@@ -3,20 +3,24 @@ import { CatalogPage } from './catalog/CatalogPage'
 import { GuidePage } from './catalog/GuidePage'
 import { ImportPage } from './catalog/ImportPage'
 import { CustomersPage } from './CustomersPage'
+import { OrdersPage } from './orders/OrdersPage'
+import { SettingsPage } from './SettingsPage'
 import { supabase } from './lib/supabase'
 
 const TABS = [
+  { id: 'orders', label: 'Siparişler' },
   { id: 'catalog', label: 'Ürün kataloğu' },
   { id: 'import', label: 'Toplu yükleme' },
-  { id: 'guide', label: 'Kılavuz' },
   { id: 'customers', label: 'Müşteriler' },
+  { id: 'settings', label: 'Ayarlar' },
+  { id: 'guide', label: 'Kılavuz' },
 ] as const
 
 export type TabId = (typeof TABS)[number]['id']
 
 function readTab(): TabId {
   const hash = window.location.hash.replace('#', '')
-  return (TABS.find((t) => t.id === hash)?.id ?? 'catalog') as TabId
+  return (TABS.find((t) => t.id === hash)?.id ?? 'orders') as TabId
 }
 
 export function AdminShell({ email }: { email: string }) {
@@ -58,6 +62,8 @@ export function AdminShell({ email }: { email: string }) {
         ))}
       </nav>
       <main>
+        {tab === 'orders' && <OrdersPage />}
+        {tab === 'settings' && <SettingsPage />}
         {tab === 'catalog' && <CatalogPage onOpenImport={() => go('import')} onOpenGuide={() => go('guide')} />}
         {tab === 'import' && <ImportPage onDone={() => go('catalog')} onOpenGuide={() => go('guide')} />}
         {tab === 'guide' && <GuidePage />}

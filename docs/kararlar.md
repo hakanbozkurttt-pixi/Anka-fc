@@ -31,8 +31,17 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
   uygulama kapalıyken anında gönderilmez.
 - Bildirim izni verilmezse yedek kanal yoktur (SMS/e-posta gönderilmez); uygulama müşteriyi uyarır.
 
-## Sipariş ve teslimat — 20.11.2026 (değişti, henüz geliştirilmedi)
+## Sipariş ve teslimat — 20.11.2026 (değişti, geliştirildi)
 - Adrese teslimatta **teslimat tarihini ve saatini müşteri girer.** Hastaneden teslim almada tarih/saat sorulmaz.
 - Adrese teslimat kargo ücreti başlangıçta **200 TL**; **yönetici panelden değiştirebilir.**
 - **Katalogdaki tüm ürünler stokta kabul edilir;** "tedarikçi teyidi" diye ayrı bir adım, durum veya not yoktur.
 - Sipariş durumları: Onay bekliyor, Onaylandı, Teslim edildi, İptal edildi.
+- Kargo ücreti değişirse yalnızca bundan sonra verilen siparişlere uygulanır; fiyatlar sipariş anında sabitlenir.
+- Onaydan önce müşteri siparişi iptal edebilir, teslim şeklini/adresini/tarihini değiştirebilir (kargo ücreti buna göre
+  eklenir veya kalkar). Onaydan sonra hastaneyle iletişime geçer.
+- Yönetici: Onay bekliyor → Onaylandı veya İptal; Onaylandı → Teslim edildi veya İptal.
+- Müşteri "Teslim aldım"ı yalnızca Onaylandı durumunda kullanabilir.
+- Teslimattan sonra, mama kaydı olan ürün için "Yeni paketi kullanmaya başladınız mı?" sorulur. "Evet" derse sayaç
+  bugünden ve siparişteki paket adediyle başlar. Cevap vermezse sayaç mevcut mama bitince kendiliğinden yeniden başlar.
+- Müşteri kendi yaptığı iptal veya "Teslim aldım" için bildirim almaz; hastanenin yaptığı değişiklikleri uygulamayı açınca görür.
+- Adrese teslimat tarihi en fazla 90 gün sonrası olabilir (teknik sınır, değiştirilebilir).
