@@ -33,7 +33,10 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 > - **İndirim:** yeni müşterinin ilk siparişinde %20, sonraki tüm siparişlerde %10 (yalnızca ürünlere; kargoya değil).
 >   Oranlar panelin **Ayarlar** sekmesinden değiştirilebilir.
 >
-> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz aylık kampanya ve katalog dışı ürün talebi yok.
+> - **Kampanyalar:** panelin **Kampanyalar** sekmesinden yüzde veya sabit fiyatlı kampanya; aynı üründe sabit indirimle
+>   birlikte geçerliyse müşteri için daha avantajlı olan tek indirim uygulanır.
+>
+> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz katalog dışı ürün talebi yok.
 
 ---
 
@@ -251,6 +254,7 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
 | Mama takip kayıtları | `food_records` tablosu (paket sayısı, günlük gram, başlangıç, hatırlatma ayarı). Bitiş ve hatırlatma tarihi `food_records_with_schedule` görünümünde, Türkiye saatine göre hesaplanır. Müşteri yalnızca kendi kayıtlarını görür ve değiştirir; yönetici yalnızca okur. |
 | Siparişler | `orders` ve `order_items` tabloları. Fiyatlar ve kargo ücreti sipariş anında siparişe yazılır; sonradan değişmez. Müşteri yalnızca kendi siparişlerini görür; sipariş verme, iptal, teslim şekli değiştirme ve durum değişikliği yalnızca kurallı veritabanı işlemleriyle yapılır (müşteri fiyat veya durumu doğrudan değiştiremez). |
+| Kampanyalar | `campaigns` ve `campaign_products` tabloları. Yalnızca yönetici yazar; müşteriler yalnızca o gün geçerli kampanyaları görür. Uygulanan indirim (kaynak, oran, kampanya adı) sipariş kalemine yazılır. |
 | Ayarlar | `app_settings` tablosu: adrese teslimat kargo ücreti (başlangıçta 200 TL), ilk sipariş indirimi (%20) ve sonraki siparişlerin indirimi (%10). Herkes okur, yalnızca yönetici değiştirir. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 

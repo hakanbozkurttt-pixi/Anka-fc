@@ -15,7 +15,7 @@ Kontrol yalnızca yerel deneme ortamında, açıkça demo olarak işaretlenmiş 
 | Sipariş, teslim şekli, kargo (200 TL, yönetici değiştirebilir) | Geliştirildi ve test edildi (20.11.2026) |
 | Sipariş onayı | Geliştirildi. Karar gereği tüm ürünler stokta kabul edilir; tedarikçi teyidi ve 3 iş günü adımı yok |
 | Panel ↔ müşteri sipariş durumu tutarlılığı | Test edildi: iki tarafta aynı durum |
-| Sabit indirim ve aylık kampanya | **Henüz geliştirilmedi** |
+| Sabit indirim ve aylık kampanya | Geliştirildi ve test edildi (ilk sipariş %20, sonra %10; kampanyada avantajlı olan tek indirim) |
 
 ## Sonraki aşamalar için kabul kriterleri (gereksinim belgesine göre)
 

@@ -32,8 +32,17 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
 - İndirim yalnızca ürünlere uygulanır; kargo ücretine uygulanmaz. İndirimli birim fiyat kuruşa yuvarlanır.
 - İki oranı da yönetici panelin **Ayarlar** sekmesinden değiştirebilir; değişiklik yalnızca yeni siparişlere uygulanır.
 - Ürün listesinde liste fiyatı; sepette ve sipariş özetinde indirimli fiyat ve indirim tutarı gösterilir.
-- Aylık kampanyalar henüz yok. Geldiğinde: aynı üründe kampanya ve sabit indirim birlikte geçerliyse müşteri için daha
-  avantajlı olan tek indirim uygulanır (gereksinim belgesi).
+
+## Kampanyalar — 20.11.2026 (geliştirildi)
+- Yönetici panelin **Kampanyalar** sekmesinden kampanya adı, indirim türü (yüzde veya sabit fiyat), başlangıç ve bitiş
+  tarihini ve ürünleri girer. Bir kampanyada birden fazla ürün olabilir; sabit fiyat her ürün için ayrı girilir.
+- Kampanya başlangıç ve bitiş günleri dahil, Türkiye saatine göre geçerlidir.
+- Aynı üründe sabit indirim (ilk sipariş %20 / sonrakiler %10) ve kampanya birlikte geçerliyse müşteri için **daha avantajlı
+  olan tek indirim** uygulanır; indirimler birleşmez. Eşitlikte sabit indirim uygulanır. Bu seçim her ürün için ayrı yapılır.
+- Müşteri sepette her ürünün yanında hangi indirimin uygulandığını görür; ürün listesinde liste fiyatı ve "Kampanyalı" etiketi.
+- Sipariş anındaki fiyat ve uygulanan indirim siparişe yazılır; kampanya sonradan bitse, değişse veya silinse de verilmiş
+  sipariş değişmez.
+- Müşteriler yalnızca o gün geçerli kampanyaları görebilir.
 
 ## Bildirimler — 20.11.2026 (değişti)
 - Mama hatırlatmaları **telefonun kendisi tarafından** zamanında gösterilir (yerel bildirim). Sunucudan gönderim,
