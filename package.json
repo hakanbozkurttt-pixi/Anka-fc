@@ -18,9 +18,12 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "admin:create": "node --env-file-if-exists=.env scripts/create-admin.mjs",
+    "db:test": "node --env-file-if-exists=.env scripts/test-security.mjs"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "supabase": "^3.2.0"
   }
 }

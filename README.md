@@ -8,8 +8,12 @@ Bu depo, veteriner hastanesinin mama takip sistemini içerir. Sistem üç parça
 
 Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine dayanır.
 
-> **Şu anki durum:** Yalnızca proje iskeleti hazır. Her iki uygulama da açılıyor ve arka plana
-> bağlanıp bağlanamadığını gösteriyor. Henüz giriş, katalog, mama takibi, sipariş veya bildirim özelliği yok.
+> **Şu anki durum:** İlk özellik tamamlandı: **müşteri hesabı ve hayvan profili.**
+> - Telefon uygulaması: kayıt (ad, soyad, telefon, adres, e-posta, şifre), giriş, çıkış,
+>   kedi/köpek profili ekleme, kayıtlı profilleri listeleme ve görüntüleme.
+> - Yönetim paneli: yönetici girişi ve müşteri/hayvan kayıtlarının salt okunur listesi (arama ile).
+>
+> Henüz katalog, mama takibi, sipariş, kargo, indirim, kampanya veya bildirim özelliği yok.
 
 ---
 
@@ -19,22 +23,31 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 Anka-fc/
 ├── apps/
 │   ├── mobile/            Müşteri telefon uygulaması (Expo / React Native)
-│   │   ├── App.tsx        Uygulamanın ilk ekranı (şimdilik bağlantı durumu)
-│   │   ├── src/lib/       Ortak yardımcı kodlar (ör. Supabase bağlantısı)
+│   │   ├── src/app/       Ekranlar (her dosya bir ekran; Expo Router)
+│   │   │   ├── (auth)/    Giriş ve kayıt ekranları (oturum yokken açılır)
+│   │   │   └── (app)/     Hayvan listesi, ekleme ve detay (oturum varken açılır)
+│   │   ├── src/components/ Ortak görsel parçalar (alan, düğme vb.)
+│   │   ├── src/lib/       Supabase bağlantısı, oturum, doğrulama, veri işlemleri
 │   │   ├── assets/        Simge ve açılış görselleri (şimdilik Expo'nun varsayılanları)
 │   │   ├── app.json       Uygulama adı ve ayarları
 │   │   └── .env.example   Telefon uygulamasının ortam değişkeni örneği
 │   │
 │   └── admin/             Hastane yönetim paneli (React + Vite)
-│       ├── src/App.tsx    Panelin ilk sayfası (şimdilik bağlantı durumu)
-│       ├── src/lib/       Ortak yardımcı kodlar (ör. Supabase bağlantısı)
+│       ├── src/App.tsx    Oturum kontrolü (yalnızca yönetici hesabı girebilir)
+│       ├── src/LoginPage.tsx      Yönetici giriş sayfası
+│       ├── src/CustomersPage.tsx  Müşteri ve hayvan listesi (salt okunur)
+│       ├── src/lib/       Supabase bağlantısı ve yardımcı kodlar
 │       └── .env.example   Panelin ortam değişkeni örneği
 │
 ├── supabase/              Arka plan (Supabase) ayarları
 │   ├── config.toml        Yerel Supabase ayarları
-│   ├── migrations/        Veritabanı tablolarını kuran SQL dosyaları (şimdilik boş)
+│   ├── migrations/        Veritabanı tablolarını ve erişim kurallarını kuran SQL dosyaları
 │   ├── functions/         Sunucu fonksiyonları, ör. günlük hatırlatma (şimdilik boş)
 │   └── seed.sql           Yerel denemeler için uydurma test verisi (şimdilik boş)
+│
+├── scripts/               Bilgisayarında çalışan yardımcı betikler
+│   ├── create-admin.mjs   Tek yönetici hesabını oluşturur
+│   └── test-security.mjs  Kayıt ve erişim kurallarını yerel veritabanında test eder
 │
 ├── package.json           Ortak komutlar; iki uygulamayı tek yerden yönetir (npm workspaces)
 ├── .nvmrc                 Önerilen Node.js sürümü (22)
@@ -115,21 +128,33 @@ npm run db:start
 Her iki `.env` dosyasında `buraya-publishable-anahtar` yazan yere, 2. adımda çıkan **Publishable key**
 değerini yapıştır. `.env` dosyaları git'e eklenmez, yani bilgisayarında kalır.
 
-**4. Yönetim panelini aç:**
+**4. Yönetici hesabını oluştur** (yalnızca bir kez):
+
+```
+npm run admin:create -- yonetici@ornek.com
+```
+
+Komut güçlü bir şifre üretir ve **yalnızca bir kez** ekrana yazar. Şifreyi güvenli bir yere kaydet.
+Gereksinimlere göre tek yönetici hesabı olduğu için ikinci bir yönetici oluşturulmaz.
+
+**5. Yönetim panelini aç:**
 
 ```
 npm run admin
 ```
 
-Tarayıcıda http://127.0.0.1:5173 adresini aç. "Arka plana (Supabase) bağlantı başarılı." yazısını görmelisin.
+Tarayıcıda http://127.0.0.1:5173 adresini aç ve yönetici e-postası ile şifresiyle giriş yap.
+Müşteri hesabıyla panele girilemez.
 
-**5. Telefon uygulamasını aç.** Yeni bir terminal penceresinde:
+**6. Telefon uygulamasını aç.** Yeni bir terminal penceresinde:
 
 ```
 npm run mobile
 ```
 
 Ekranda bir QR kodu çıkar. iPhone'da kamerayla, Android'de Expo Go'nun içinden bu kodu okut.
+Uygulamada "Kayıt olun" ile yeni bir müşteri hesabı aç, ardından "Kedi veya köpek ekle" ile hayvan ekle.
+Eklediğin kayıtlar yönetim panelinde de görünür.
 
 > **Telefonda "Arka plana ulaşılamadı" yazıyorsa:** Telefon `127.0.0.1` adresiyle bilgisayarına
 > ulaşamaz. `apps/mobile/.env` dosyasında bu adresi bilgisayarının yerel IP adresiyle değiştir
@@ -138,6 +163,10 @@ Ekranda bir QR kodu çıkar. iPhone'da kamerayla, Android'de Expo Go'nun içinde
 > `.env` dosyasını değiştirdikten sonra `npm run mobile` komutunu kapatıp yeniden başlat.
 
 **İşin bitince** veritabanını durdur: `npm run db:stop`
+
+> **Daha önce `npm run db:start` çalıştırdıysan:** Yeni tablolar eklendiğinde bunların kurulması için
+> bir kez `npm run db:reset` çalıştır. Bu komut **yerel** veritabanındaki tüm deneme kayıtlarını siler
+> ve tabloları yeniden kurar; yönetici hesabını da 4. adımla yeniden oluşturman gerekir.
 
 ---
 
@@ -153,12 +182,28 @@ Bu komutların hepsi proje kök klasöründe çalıştırılır.
 | `npm run db:status` | Yerel Supabase adreslerini ve anahtarlarını gösterir |
 | `npm run db:stop` | Yerel Supabase'i durdurur |
 | `npm run db:reset` | Yerel veritabanını silip `migrations` ve `seed.sql` ile yeniden kurar |
+| `npm run admin:create -- <e-posta>` | Tek yönetici hesabını oluşturur |
+| `npm run db:test` | Kayıt, giriş ve erişim kurallarını yerel veritabanında test eder (uydurma demo kullanıcılarla; iş bitince siler) |
 | `npm run typecheck` | İki uygulamada da kod hatası kontrolü yapar |
 | `npm run admin:build` | Yönetim panelinin yayına hazır hâlini derler (yayınlamaz) |
 
 Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http://127.0.0.1:54323 (Supabase Studio) adresini aç.
 
 ---
+
+## Veriler nerede ve nasıl korunuyor?
+
+| Bilgi | Nerede saklanır |
+|---|---|
+| E-posta ve şifre | Supabase'in giriş sistemi (`auth.users`). Şifre düz metin olarak değil, şifrelenmiş (hash) olarak saklanır. |
+| Ad, soyad, telefon, adres | `profiles` tablosu. Kayıt anında veritabanı tarafından oluşturulur. |
+| Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
+
+- **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.
+- **Satır bazlı erişim kuralları (RLS):** Müşteri yalnızca kendi profilini ve hayvanlarını görür ve yalnızca kendi adına hayvan ekleyebilir. Giriş yapmamış kişi hiçbir kaydı göremez.
+- **Yönetici yetkisi** hesabın sunucu tarafındaki `app_metadata.role = admin` bilgisinden gelir. Bu bilgiyi yalnızca `npm run admin:create` betiği gizli anahtarla atayabilir; müşteri kendine yönetici yetkisi veremez. Yönetici kayıtları yalnızca okuyabilir.
+- Şifreler en az 8 karakter olmalıdır.
+- Bu kuralların hepsi `npm run db:test` ile gerçek (yerel) veritabanında test edilir.
 
 ## Güvenlik kuralları
 
@@ -171,7 +216,7 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 
 ## Şimdilik gerekmeyen hesaplar
 
-Yerel geliştirme için **hiçbir hesap açman gerekmiyor.** Teknik planda listelenen hesaplar daha sonraki aşamalarda gerekecek:
+Yerel geliştirme için **hiçbir hesap açman gerekmiyor.** Kökteki `.env.example` yalnızca ileride bulut Supabase projesi için gereken betik ayarlarını gösterir; yerelde gerekmez. Teknik planda listelenen hesaplar daha sonraki aşamalarda gerekecek:
 
 - Supabase: bulutta gerçek proje açarken
 - Firebase: bildirimlere geçerken (Aşama 4)
