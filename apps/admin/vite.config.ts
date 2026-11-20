@@ -10,4 +10,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    // Excel kütüphanesi (exceljs) büyüktür; yalnızca şablon indirilirken veya
+    // Excel dosyası yüklenirken ayrıca indirilir, panelin açılışını yavaşlatmaz.
+    chunkSizeWarningLimit: 1200,
+  },
 })

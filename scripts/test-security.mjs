@@ -24,6 +24,8 @@ const run = randomBytes(4).toString('hex')
 const demoEmail = (name) => `demo-${name}-${run}@example.com`
 const password = `Demo-${randomBytes(8).toString('hex')}`
 const createdUserIds = []
+const createdProductIds = []
+const createdImagePaths = []
 
 const demoCustomer = (first) => ({
   first_name: first,
@@ -329,7 +331,144 @@ try {
     const { data } = await service.from('profiles').select('id').eq('id', created.user.id)
     assert.equal(data.length, 0)
   })
+
+  console.log('Ürün kataloğu')
+  // TEST VERİSİ: Aşağıdaki ürünler gerçek değildir ve test sonunda silinir.
+  const testProduct = (suffix, extra = {}) => ({
+    brand: 'Carni',
+    name: `TEST ürünü ${suffix} ${run}`,
+    species: 'cat',
+    package_grams: 1500,
+    price_try: 100,
+    code: `TEST-${run}-${suffix}`,
+    ...extra,
+  })
+  const remember = (rows) => rows?.forEach((r) => createdProductIds.push(r.id))
+
+  await test('yönetici ürün ekleyebiliyor (her paket boyutu ayrı kayıt)', async () => {
+    const { data, error } = await adminClient
+      .from('products')
+      .insert([testProduct('1500'), testProduct('3000', { package_grams: 3000, price_try: 180.5 })])
+      .select('id')
+    remember(data)
+    assert.equal(error, null)
+    assert.equal(data.length, 2)
+  })
+
+  await test('aynı barkod / ürün kodu ikinci kez kaydedilemiyor (büyük/küçük harf fark etmez)', async () => {
+    const { data, error } = await adminClient
+      .from('products')
+      .insert(testProduct('kopya', { code: `test-${run}-1500` }))
+      .select('id')
+    remember(data)
+    assert.equal(error?.code, '23505')
+  })
+
+  await test('listede olmayan marka ve geçersiz fiyat reddediliyor', async () => {
+    const r1 = await adminClient.from('products').insert(testProduct('m', { brand: 'Başka', code: null })).select('id')
+    const r2 = await adminClient.from('products').insert(testProduct('f', { price_try: 0, code: null })).select('id')
+    remember(r1.data)
+    remember(r2.data)
+    assert.ok(r1.error)
+    assert.ok(r2.error)
+  })
+
+  await test('müşteri ürün ekleyemiyor ve değiştiremiyor', async () => {
+    const ins = await a.client.from('products').insert(testProduct('musteri')).select('id')
+    remember(ins.data)
+    assert.ok(ins.error)
+    await a.client.from('products').update({ price_try: 1 }).eq('code', `TEST-${run}-1500`)
+    const { data } = await service.from('products').select('price_try').eq('code', `TEST-${run}-1500`).single()
+    assert.equal(Number(data.price_try), 100)
+  })
+
+  await test('müşteri yalnızca aktif ürünleri görüyor; giriş yapmamış kişi hiç göremiyor', async () => {
+    await adminClient.from('products').update({ is_active: false }).eq('code', `TEST-${run}-3000`)
+    const { data } = await a.client.from('products').select('code').like('code', `TEST-${run}-%`)
+    assert.deepEqual(data.map((p) => p.code), [`TEST-${run}-1500`])
+    const anon = await newClient().from('products').select('id')
+    assert.ok(anon.error || anon.data.length === 0)
+  })
+
+  await test('toplu yükleme: bir satır hatalıysa hiçbir satır kaydedilmiyor', async () => {
+    const { error } = await adminClient.rpc('import_products', {
+      rows: [testProduct('t1', { code: `TEST-${run}-T1` }), testProduct('t2', { code: `TEST-${run}-T2`, price_try: 0 })],
+    })
+    assert.ok(error)
+    const { data } = await service.from('products').select('id').like('code', `TEST-${run}-T%`)
+    assert.equal(data.length, 0)
+  })
+
+  await test('toplu yükleme: yeni ürünler eklenip onaylanan ürün güncelleniyor', async () => {
+    const { data: existing } = await service.from('products').select('id').eq('code', `TEST-${run}-1500`).single()
+    const { data, error } = await adminClient.rpc('import_products', {
+      rows: [
+        testProduct('t1', { code: `TEST-${run}-T1`, species: 'both' }),
+        { ...testProduct('1500', { price_try: 120.75 }), id: existing.id },
+      ],
+    })
+    assert.equal(error, null)
+    assert.deepEqual(data, { inserted: 1, updated: 1 })
+    const { data: rows } = await service.from('products').select('id, code, price_try').like('code', `TEST-${run}-%`)
+    remember(rows.filter((r) => r.code === `TEST-${run}-T1`))
+    assert.equal(Number(rows.find((r) => r.code === `TEST-${run}-1500`).price_try), 120.75)
+  })
+
+  await test('müşteri toplu yükleme yapamıyor', async () => {
+    const { error } = await a.client.rpc('import_products', { rows: [testProduct('x', { code: `TEST-${run}-X` })] })
+    assert.ok(error)
+    const { data } = await service.from('products').select('id').eq('code', `TEST-${run}-X`)
+    assert.equal(data.length, 0)
+  })
+
+  // 1x1 piksel PNG (test görseli)
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64',
+  )
+
+  await test('yönetici ürün görseli yükleyebiliyor ve görsel herkese açık okunuyor', async () => {
+    const path = `products/test-${run}.png`
+    const { error } = await adminClient.storage.from('product-images').upload(path, png, { contentType: 'image/png' })
+    assert.equal(error, null)
+    createdImagePaths.push(path)
+    const url = adminClient.storage.from('product-images').getPublicUrl(path).data.publicUrl
+    const res = await fetch(url)
+    assert.equal(res.status, 200)
+  })
+
+  await test('yönetici değiştirilen görseli depodan silebiliyor', async () => {
+    const path = `products/test-sil-${run}.png`
+    await adminClient.storage.from('product-images').upload(path, png, { contentType: 'image/png' })
+    const { data } = await adminClient.storage.from('product-images').remove([path])
+    if (!data?.length) createdImagePaths.push(path)
+    assert.equal(data?.length, 1)
+  })
+
+  await test('müşteri ürün görselini silemiyor', async () => {
+    const { data } = await a.client.storage.from('product-images').remove([createdImagePaths[0]])
+    assert.equal(data?.length ?? 0, 0)
+    const res = await fetch(adminClient.storage.from('product-images').getPublicUrl(createdImagePaths[0]).data.publicUrl)
+    assert.equal(res.status, 200)
+  })
+
+  await test('müşteri ürün görseli yükleyemiyor', async () => {
+    const path = `products/test-musteri-${run}.png`
+    const { error } = await a.client.storage.from('product-images').upload(path, png, { contentType: 'image/png' })
+    if (!error) createdImagePaths.push(path)
+    assert.ok(error)
+  })
+
+  await test('görsel olmayan dosya yüklenemiyor', async () => {
+    const path = `products/test-${run}.txt`
+    const { error } = await adminClient.storage.from('product-images').upload(path, Buffer.from('test'), { contentType: 'text/plain' })
+    if (!error) createdImagePaths.push(path)
+    assert.ok(error)
+  })
 } finally {
+  // Test ürünlerini ve görsellerini temizle
+  if (createdProductIds.length) await service.from('products').delete().in('id', createdProductIds)
+  if (createdImagePaths.length) await service.storage.from('product-images').remove(createdImagePaths)
   // Demo kullanıcılarını temizle (profiller ve hayvanlar zincirleme silinir).
   for (const id of createdUserIds) await service.auth.admin.deleteUser(id)
 }

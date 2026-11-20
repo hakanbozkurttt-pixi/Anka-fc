@@ -14,8 +14,11 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 >   kedi/köpek profili ekleme, kayıtlı profilleri listeleme ve görüntüleme.
 > - Aydınlatma metninin güncel sürümünü onaylamamış müşteri, girişten sonra onay ekranını geçmeden devam edemez.
 > - Yönetim paneli: yönetici girişi ve müşteri/hayvan kayıtlarının salt okunur listesi (arama ve KVKK onay bilgisiyle).
+> - **Ürün kataloğu (yönetim paneli):** ürünleri tek tek ekleme/düzenleme (görsel dahil), aktif/pasif yapma,
+>   Excel/CSV şablonu indirme ve önizlemeli toplu yükleme. Kullanım kılavuzu: [docs/urun-katalogu-kilavuzu.md](docs/urun-katalogu-kilavuzu.md)
 >
-> Henüz katalog, mama takibi, sipariş, kargo, indirim, kampanya veya bildirim özelliği yok.
+> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz mama takibi, sipariş, kargo, indirim,
+> kampanya veya bildirim özelliği yok.
 
 ---
 
@@ -38,7 +41,9 @@ Anka-fc/
 │   └── admin/             Hastane yönetim paneli (React + Vite)
 │       ├── src/App.tsx    Oturum kontrolü (yalnızca yönetici hesabı girebilir)
 │       ├── src/LoginPage.tsx      Yönetici giriş sayfası
+│       ├── src/AdminShell.tsx     Sekmeler (Ürün kataloğu, Toplu yükleme, Kılavuz, Müşteriler)
 │       ├── src/CustomersPage.tsx  Müşteri ve hayvan listesi (salt okunur)
+│       ├── src/catalog/   Ürün kataloğu: liste, ürün formu, toplu yükleme, şablon, kılavuz
 │       ├── src/lib/       Supabase bağlantısı ve yardımcı kodlar
 │       └── .env.example   Panelin ortam değişkeni örneği
 │
@@ -48,6 +53,8 @@ Anka-fc/
 │   ├── templates/         Türkçe e-posta şablonları (doğrulama ve şifre yenileme kodu)
 │   ├── functions/         Sunucu fonksiyonları, ör. günlük hatırlatma (şimdilik boş)
 │   └── seed.sql           Yerel denemeler için uydurma test verisi (şimdilik boş)
+│
+├── docs/                  Kullanım kılavuzları (ör. ürün kataloğu)
 │
 ├── scripts/               Bilgisayarında çalışan yardımcı betikler
 │   ├── create-admin.mjs   Tek yönetici hesabını oluşturur
@@ -192,6 +199,7 @@ Bu komutların hepsi proje kök klasöründe çalıştırılır.
 | `npm run admin:create -- <e-posta>` | Tek yönetici hesabını oluşturur |
 | `npm run admin:reset-password` | Yönetici şifresini unutulduğunda yeni şifre üretir |
 | `npm run db:test` | Kayıt, giriş ve erişim kurallarını yerel veritabanında test eder (uydurma demo kullanıcılarla; iş bitince siler) |
+| `npm run test -w admin` | Toplu yükleme denetim kurallarını test eder (veritabanı gerekmez) |
 | `npm run typecheck` | İki uygulamada da kod hatası kontrolü yapar |
 | `npm run admin:build` | Yönetim panelinin yayına hazır hâlini derler (yayınlamaz) |
 
@@ -207,6 +215,8 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | E-posta ve şifre | Supabase'in giriş sistemi (`auth.users`). Şifre düz metin olarak değil, şifrelenmiş (hash) olarak saklanır. |
 | Ad, soyad, telefon, adres | `profiles` tablosu. Kayıt anında veritabanı tarafından oluşturulur. |
 | KVKK onayları | `kvkk_acceptances` tablosu: hangi müşteri, metnin hangi sürümünü, ne zaman onayladı. Onay zamanı sunucu saatiyle yazılır; müşteri onayı değiştiremez veya silemez. |
+| Ürün kataloğu | `products` tablosu. Her paket boyutu ayrı satır. Stok ve günlük tüketim bilgisi tutulmaz. Yalnızca yönetici ekler/değiştirir; müşteriler yalnızca aktif ürünleri görebilir. |
+| Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 
 - **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.

@@ -22,7 +22,7 @@ function petSummary(pet: Pet) {
 }
 
 // Salt okunur müşteri ve hayvan listesi. Bu ekrandan kayıt değiştirilemez.
-export function CustomersPage({ email }: { email: string }) {
+export function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerWithPets[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,16 +59,8 @@ export function CustomersPage({ email }: { email: string }) {
   }, [customers, query])
 
   return (
-    <main className="shell">
-      <header className="topbar">
-        <h1>Müşteriler ve hayvanlar</h1>
-        <div className="topbar-right">
-          <span className="muted">{email}</span>
-          <button type="button" className="secondary" onClick={() => supabase?.auth.signOut()}>
-            Çıkış yap
-          </button>
-        </div>
-      </header>
+    <>
+      <h1>Müşteriler ve hayvanlar</h1>
 
       <input
         type="search"
@@ -126,6 +118,6 @@ export function CustomersPage({ email }: { email: string }) {
           )}
         </section>
       ))}
-    </main>
+    </>
   )
 }

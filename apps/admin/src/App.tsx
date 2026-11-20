@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
-import { CustomersPage } from './CustomersPage'
+import { AdminShell } from './AdminShell'
 import { LoginPage } from './LoginPage'
 import { isAdminSession } from './lib/auth'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -49,5 +49,5 @@ export default function App() {
 
   if (!session || !isAdminSession(session)) return <LoginPage notice={notice} />
 
-  return <CustomersPage email={session.user.email ?? ''} />
+  return <AdminShell email={session.user.email ?? ''} />
 }
