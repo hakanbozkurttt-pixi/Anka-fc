@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 import { Button, Choice, ErrorBanner, Field, styles } from '../../../components/ui';
 import { toTurkishError } from '../../../lib/errors';
 import { createPet, SEX_LABEL, SPECIES_LABEL, type Sex, type Species } from '../../../lib/pets';
-import { parseDecimal, parseTurkishDate } from '../../../lib/validation';
+import { parseDecimal, parseTurkishDate, todayLocalIso } from '../../../lib/validation';
 
 type Errors = Partial<Record<'species' | 'name' | 'birthDate' | 'weight' | 'notes', string>>;
 
@@ -30,7 +30,7 @@ export default function NewPetScreen() {
     if (birthDate.trim()) {
       isoBirthDate = parseTurkishDate(birthDate);
       if (!isoBirthDate) next.birthDate = 'Tarihi GG.AA.YYYY biçiminde girin.';
-      else if (isoBirthDate > new Date().toISOString().slice(0, 10))
+      else if (isoBirthDate > todayLocalIso())
         next.birthDate = 'Doğum tarihi bugünden sonra olamaz.';
     }
 

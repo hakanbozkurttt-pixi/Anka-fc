@@ -1,3 +1,4 @@
+import { fetchAll } from '../lib/fetchAll'
 import { supabase } from '../lib/supabase'
 import type { Product, ProductInput } from './model.ts'
 
@@ -11,14 +12,17 @@ export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 export async function listProducts(): Promise<Product[]> {
-  const { data, error } = await client()
-    .from('products')
-    .select('*')
-    .order('brand')
-    .order('name')
-    .order('package_grams')
-  if (error) throw error
-  return (data ?? []).map((p) => ({ ...p, price_try: Number(p.price_try) })) as Product[]
+  const data = await fetchAll<Product>((from, to) =>
+    client()
+      .from('products')
+      .select('*')
+      .order('brand')
+      .order('name')
+      .order('package_grams')
+      .order('id')
+      .range(from, to),
+  )
+  return data.map((p) => ({ ...p, price_try: Number(p.price_try) }))
 }
 
 export async function createProduct(input: ProductInput & { image_path?: string | null }) {

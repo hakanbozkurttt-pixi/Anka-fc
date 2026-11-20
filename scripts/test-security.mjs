@@ -250,6 +250,18 @@ try {
     assert.equal(error, null)
   })
 
+  // Türkiye saatine göre bugün / yarın (veritabanı saati UTC olsa bile)
+  const trDate = (offsetDays = 0) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() + offsetDays * 86400000))
+
+  await test('doğum tarihi: Türkiye saatine göre bugün kabul, yarın reddediliyor', async () => {
+    const ok = await a.client.from('pets').insert({ species: 'cat', name: 'Demo Bugün', birth_date: trDate(0) })
+    const bad = await a.client.from('pets').insert({ species: 'cat', name: 'Demo Yarın', birth_date: trDate(1) })
+    await service.from('pets').delete().eq('name', 'Demo Bugün')
+    assert.equal(ok.error, null)
+    assert.ok(bad.error)
+  })
+
   await test('kedi/köpek dışında tür reddediliyor', async () => {
     const { error } = await a.client.from('pets').insert({ species: 'bird', name: 'Maviş' })
     assert.ok(error)

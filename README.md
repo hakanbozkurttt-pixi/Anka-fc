@@ -216,7 +216,7 @@ Bu komutların hepsi proje kök klasöründe çalıştırılır.
 | `npm run admin:create -- <e-posta>` | Tek yönetici hesabını oluşturur |
 | `npm run admin:reset-password` | Yönetici şifresini unutulduğunda yeni şifre üretir |
 | `npm run db:test` | Kayıt, giriş ve erişim kurallarını yerel veritabanında test eder (uydurma demo kullanıcılarla; iş bitince siler) |
-| `npm run test -w admin` | Toplu yükleme denetim kurallarını test eder (veritabanı gerekmez) |
+| `npm test` | Kayıt formu ve toplu yükleme kurallarını test eder (veritabanı gerekmez) |
 | `npm run typecheck` | İki uygulamada da kod hatası kontrolü yapar |
 | `npm run admin:build` | Yönetim panelinin yayına hazır hâlini derler (yayınlamaz) |
 

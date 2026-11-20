@@ -87,6 +87,18 @@ export function parseTurkishDate(value: string): string | null {
   return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+/**
+ * Telefonun kendi saatine göre bugünün tarihi ("YYYY-AA-GG").
+ * Not: toISOString() dünya saatini (UTC) kullanır; Türkiye'de gece 00:00-03:00
+ * arasında bir önceki günü verir. Bu yüzden yerel tarih kullanılır.
+ */
+export function todayLocalIso(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /** "YYYY-AA-GG" → "GG.AA.YYYY" */
 export function formatTurkishDate(iso: string): string {
   const [y, m, d] = iso.split('-');

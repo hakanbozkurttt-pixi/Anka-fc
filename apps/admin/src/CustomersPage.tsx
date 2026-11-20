@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { fetchAll } from './lib/fetchAll'
 import { supabase } from './lib/supabase'
 import { SEX_LABEL, SPECIES_LABEL, type CustomerWithPets, type Pet } from './lib/types'
 
@@ -29,18 +30,21 @@ export function CustomersPage() {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    if (!supabase) return
-    supabase
-      .from('profiles')
-      .select(
-        'id, first_name, last_name, phone, address, email, created_at, pets(*), kvkk_acceptances(version, accepted_at)',
-      )
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) setError('Kayıtlar yüklenemedi.')
-        else setCustomers((data ?? []) as CustomerWithPets[])
-        setLoading(false)
-      })
+    const client = supabase
+    if (!client) return
+    fetchAll<CustomerWithPets>((from, to) =>
+      client
+        .from('profiles')
+        .select(
+          'id, first_name, last_name, phone, address, email, created_at, pets(*), kvkk_acceptances(version, accepted_at)',
+        )
+        .order('created_at', { ascending: false })
+        .order('id')
+        .range(from, to),
+    )
+      .then((list) => setCustomers(list))
+      .catch(() => setError('Kayıtlar yüklenemedi.'))
+      .finally(() => setLoading(false))
   }, [])
 
   const filtered = useMemo(() => {
