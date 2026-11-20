@@ -1,7 +1,10 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 
-import { Button, ErrorBanner, Field, styles } from '../../components/ui';
+import { KvkkModal } from '../../components/KvkkModal';
+import { Button, Checkbox, ErrorBanner, Field, styles } from '../../components/ui';
+import { KVKK_VERSION } from '../../content/kvkk';
 import { toTurkishError } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 import { MIN_PASSWORD_LENGTH, validateSignUp, type FieldErrors, type SignUpInput } from '../../lib/validation';
@@ -14,14 +17,15 @@ const empty: SignUpInput = {
   email: '',
   password: '',
   passwordRepeat: '',
+  kvkkAccepted: false,
 };
 
 export default function SignUpScreen() {
   const [form, setForm] = useState<SignUpInput>(empty);
   const [errors, setErrors] = useState<FieldErrors<keyof SignUpInput>>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [kvkkOpen, setKvkkOpen] = useState(false);
 
   const set = (key: keyof SignUpInput) => (value: string) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -29,7 +33,6 @@ export default function SignUpScreen() {
     const nextErrors = validateSignUp(form);
     setErrors(nextErrors);
     setFormError(null);
-    setInfo(null);
     if (Object.keys(nextErrors).length > 0 || !supabase) return;
 
     setLoading(true);
@@ -44,6 +47,8 @@ export default function SignUpScreen() {
           last_name: form.lastName.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
+          // Onaylanan aydınlatma metni sürümü; veritabanı onay kaydını bununla oluşturur.
+          kvkk_version: KVKK_VERSION,
         },
       },
     });
@@ -53,11 +58,11 @@ export default function SignUpScreen() {
       setFormError(toTurkishError(error));
       return;
     }
-    // E-posta doğrulaması ileride açılırsa oturum hemen oluşmaz.
+    // E-posta doğrulaması açık olduğu için oturum hemen açılmaz;
+    // müşteri e-postasına gelen 6 haneli kodu girerek kaydını tamamlar.
     if (!data.session) {
-      setInfo('Kaydınız alındı. E-postanıza gelen bağlantıyla hesabınızı doğruladıktan sonra giriş yapabilirsiniz.');
+      router.replace({ pathname: '/verify-email', params: { email: form.email.trim() } });
     }
-    // Oturum oluştuysa kök düzen kullanıcıyı otomatik olarak uygulamaya alır.
   }
 
   return (
@@ -66,7 +71,6 @@ export default function SignUpScreen() {
         <Text style={[styles.muted, { marginBottom: 16 }]}>Tüm alanlar zorunludur.</Text>
 
         <ErrorBanner message={formError} />
-        {info ? <Text style={[styles.muted, { marginBottom: 12 }]}>{info}</Text> : null}
 
         <Field label="Ad" value={form.firstName} onChangeText={set('firstName')} error={errors.firstName} autoComplete="given-name" textContentType="givenName" />
         <Field label="Soyad" value={form.lastName} onChangeText={set('lastName')} error={errors.lastName} autoComplete="family-name" textContentType="familyName" />
@@ -121,7 +125,21 @@ export default function SignUpScreen() {
           textContentType="newPassword"
         />
 
+        <Checkbox
+          checked={form.kvkkAccepted}
+          onChange={(value) => setForm((f) => ({ ...f, kvkkAccepted: value }))}
+          error={errors.kvkkAccepted}
+        >
+          <Text style={{ lineHeight: 20 }}>
+            <Text style={styles.link} onPress={() => setKvkkOpen(true)}>
+              KVKK Aydınlatma Metni
+            </Text>
+            'ni okudum ve onaylıyorum.
+          </Text>
+        </Checkbox>
+
         <Button title="Kayıt ol" onPress={handleSignUp} loading={loading} />
+        <KvkkModal visible={kvkkOpen} onClose={() => setKvkkOpen(false)} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

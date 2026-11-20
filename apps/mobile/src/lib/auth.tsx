@@ -7,31 +7,48 @@ type AuthState = {
   session: Session | null;
   // Uygulama açılışında kayıtlı oturum okunurken true.
   loading: boolean;
+  // Şifre yenileme sırasında true. Yenileme kodu doğrulanınca geçici bir oturum
+  // açılır; yeni şifre kaydedilene kadar kullanıcı uygulamaya alınmaz.
+  recovering: boolean;
+  setRecovering: (value: boolean) => void;
 };
 
-const AuthContext = createContext<AuthState>({ session: null, loading: true });
+const AuthContext = createContext<AuthState>({
+  session: null,
+  loading: true,
+  recovering: false,
+  setRecovering: () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ session: null, loading: true });
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
-      setState({ session: null, loading: false });
+      setLoading(false);
       return;
     }
 
     supabase.auth.getSession().then(({ data }) => {
-      setState({ session: data.session, loading: false });
+      setSession(data.session);
+      setLoading(false);
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ session, loading: false });
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      setSession(next);
+      setLoading(false);
     });
 
     return () => data.subscription.unsubscribe();
   }, []);
 
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ session, loading, recovering, setRecovering }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

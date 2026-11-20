@@ -17,6 +17,12 @@ export function toTurkishError(error: ErrorLike): string {
     return 'E-posta adresi geçersiz.';
   if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit' || /rate limit/i.test(message))
     return 'Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.';
+  if (code === 'email_not_confirmed' || /email not confirmed/i.test(message))
+    return 'E-posta adresiniz henüz doğrulanmadı.';
+  if (code === 'otp_expired' || /token has expired or is invalid|otp.*(expired|invalid)/i.test(message))
+    return 'Kod hatalı veya süresi dolmuş. Yeni kod isteyebilirsiniz.';
+  if (code === 'same_password' || /should be different from the old password/i.test(message))
+    return 'Yeni şifre eski şifrenizle aynı olamaz.';
   if (code === 'signup_disabled') return 'Yeni kayıt şu anda kapalı.';
   if (/database error saving new user/i.test(message))
     return 'Kayıt bilgileri kaydedilemedi. Lütfen tüm alanları kontrol edin.';

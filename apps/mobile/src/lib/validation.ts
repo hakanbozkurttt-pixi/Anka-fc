@@ -14,6 +14,7 @@ export type SignUpInput = {
   email: string;
   password: string;
   passwordRepeat: string;
+  kvkkAccepted: boolean;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,11 +45,24 @@ export function validateSignUp(input: SignUpInput): FieldErrors<keyof SignUpInpu
   if (!input.email.trim()) errors.email = 'E-posta zorunludur.';
   else if (!isValidEmail(input.email)) errors.email = 'Geçerli bir e-posta adresi girin.';
 
-  if (input.password.length < MIN_PASSWORD_LENGTH)
-    errors.password = `Şifre en az ${MIN_PASSWORD_LENGTH} karakter olmalıdır.`;
-  if (input.passwordRepeat !== input.password) errors.passwordRepeat = 'Şifreler eşleşmiyor.';
+  Object.assign(errors, validateNewPassword(input.password, input.passwordRepeat));
+
+  if (!input.kvkkAccepted) errors.kvkkAccepted = 'Devam etmek için aydınlatma metnini onaylamanız gerekir.';
 
   return errors;
+}
+
+export function validateNewPassword(password: string, passwordRepeat: string) {
+  const errors: { password?: string; passwordRepeat?: string } = {};
+  if (password.length < MIN_PASSWORD_LENGTH)
+    errors.password = `Şifre en az ${MIN_PASSWORD_LENGTH} karakter olmalıdır.`;
+  if (passwordRepeat !== password) errors.passwordRepeat = 'Şifreler eşleşmiyor.';
+  return errors;
+}
+
+/** E-postayla gelen doğrulama/yenileme kodu: 6 rakam. */
+export function isValidOtp(value: string) {
+  return /^\d{6}$/.test(value.trim());
 }
 
 /**

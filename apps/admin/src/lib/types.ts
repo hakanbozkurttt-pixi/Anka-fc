@@ -22,6 +22,7 @@ export type CustomerWithPets = {
   email: string
   created_at: string
   pets: Pet[]
+  kvkk_acceptances: { version: string; accepted_at: string }[]
 }
 
 export const SPECIES_LABEL: Record<Species, string> = { cat: 'Kedi', dog: 'Köpek' }

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text } from 'react-native';
 
-import { Button, ErrorBanner, Field, styles } from '../../components/ui';
+import { Button, ErrorBanner, Field, LinkText, styles } from '../../components/ui';
 import { toTurkishError } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 import { isValidEmail } from '../../lib/validation';
@@ -13,6 +13,7 @@ export default function SignInScreen() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unconfirmed, setUnconfirmed] = useState(false);
 
   async function handleSignIn() {
     const nextErrors: typeof errors = {};
@@ -21,6 +22,7 @@ export default function SignInScreen() {
     if (!password) nextErrors.password = 'Şifre zorunludur.';
     setErrors(nextErrors);
     setFormError(null);
+    setUnconfirmed(false);
     if (Object.keys(nextErrors).length > 0 || !supabase) return;
 
     setLoading(true);
@@ -30,7 +32,10 @@ export default function SignInScreen() {
     });
     setLoading(false);
     // Başarılı girişte yönlendirmeyi kök düzen (oturum değişimi) yapar.
-    if (error) setFormError(toTurkishError(error));
+    if (error) {
+      setFormError(toTurkishError(error));
+      setUnconfirmed(error.code === 'email_not_confirmed');
+    }
   }
 
   return (
@@ -61,7 +66,20 @@ export default function SignInScreen() {
           textContentType="password"
         />
 
+        {unconfirmed ? (
+          <Button
+            title="Doğrulama kodunu gir"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/verify-email', params: { email: email.trim(), resend: '1' } })}
+          />
+        ) : null}
+
         <Button title="Giriş yap" onPress={handleSignIn} loading={loading} />
+
+        <LinkText
+          title="Şifremi unuttum"
+          onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim() } })}
+        />
 
         <Pressable accessibilityRole="link" onPress={() => router.push('/sign-up')} style={{ marginTop: 20 }}>
           <Text style={[styles.muted, { textAlign: 'center' }]}>

@@ -229,7 +229,8 @@ enabled = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# Karar: müşteriler e-postalarına gelen 6 haneli kodla adreslerini doğrular.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # If enabled, users will need to provide their current password to change their password, unless
@@ -251,6 +252,16 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
+
+# Türkçe e-posta şablonları: bağlantı yerine 6 haneli kod gönderilir;
+# müşteri kodu telefon uygulamasına girer.
+[auth.email.template.confirmation]
+subject = "Mama Takip: e-posta doğrulama kodunuz"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Mama Takip: şifre yenileme kodunuz"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

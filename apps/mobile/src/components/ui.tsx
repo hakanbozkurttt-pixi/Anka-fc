@@ -122,6 +122,52 @@ export function Choice<T extends string>({
   );
 }
 
+export function Checkbox({
+  checked,
+  onChange,
+  children,
+  error,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  children: ReactNode;
+  error?: string;
+}) {
+  return (
+    <View style={styles.field}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        onPress={() => onChange(!checked)}
+        style={styles.checkboxRow}
+      >
+        <View style={[styles.checkbox, checked && styles.checkboxChecked, error ? styles.inputError : null]}>
+          {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
+        </View>
+        <View style={{ flex: 1 }}>{children}</View>
+      </Pressable>
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+}
+
+export function LinkText({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} style={{ paddingVertical: 8 }}>
+      <Text style={styles.link}>{title}</Text>
+    </Pressable>
+  );
+}
+
+export function InfoBanner({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <View style={styles.info}>
+      <Text style={{ color: colors.text }}>{message}</Text>
+    </View>
+  );
+}
+
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
@@ -183,5 +229,20 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bannerText: { color: colors.error },
+  checkboxRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkboxMark: { color: colors.primaryText, fontWeight: '700' },
+  link: { color: colors.primary, fontWeight: '600', textAlign: 'center' },
+  info: { backgroundColor: '#e3f1ea', borderRadius: 8, padding: 12, marginBottom: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
 });

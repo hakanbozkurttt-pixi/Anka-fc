@@ -7,7 +7,8 @@ import { AuthProvider, useAuth } from '../lib/auth';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, recovering } = useAuth();
+  const signedIn = !!session && !recovering;
 
   if (!isSupabaseConfigured) {
     return (
@@ -34,10 +35,10 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Protected guard={!session}>
+      <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Protected guard={!!session}>
+      <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

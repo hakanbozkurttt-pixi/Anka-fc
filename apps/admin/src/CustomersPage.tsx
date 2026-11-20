@@ -32,7 +32,9 @@ export function CustomersPage({ email }: { email: string }) {
     if (!supabase) return
     supabase
       .from('profiles')
-      .select('id, first_name, last_name, phone, address, email, created_at, pets(*)')
+      .select(
+        'id, first_name, last_name, phone, address, email, created_at, pets(*), kvkk_acceptances(version, accepted_at)',
+      )
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) setError('Kayıtlar yüklenemedi.')
@@ -100,6 +102,15 @@ export function CustomersPage({ email }: { email: string }) {
             <dd>{c.email}</dd>
             <dt>Adres</dt>
             <dd>{c.address}</dd>
+            <dt>KVKK onayı</dt>
+            <dd>
+              {c.kvkk_acceptances.length === 0
+                ? 'Yok'
+                : [...c.kvkk_acceptances]
+                    .sort((x, y) => y.accepted_at.localeCompare(x.accepted_at))
+                    .map((k) => `${k.version} (${new Date(k.accepted_at).toLocaleString('tr-TR')})`)
+                    .join(', ')}
+            </dd>
           </dl>
           {c.pets.length === 0 ? (
             <p className="muted">Kayıtlı hayvan yok.</p>

@@ -9,9 +9,11 @@ Bu depo, veteriner hastanesinin mama takip sistemini içerir. Sistem üç parça
 Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine dayanır.
 
 > **Şu anki durum:** İlk özellik tamamlandı: **müşteri hesabı ve hayvan profili.**
-> - Telefon uygulaması: kayıt (ad, soyad, telefon, adres, e-posta, şifre), giriş, çıkış,
+> - Telefon uygulaması: kayıt (ad, soyad, telefon, adres, e-posta, şifre ve KVKK aydınlatma metni onayı),
+>   e-posta doğrulama (6 haneli kod), giriş, şifre yenileme (6 haneli kod), çıkış,
 >   kedi/köpek profili ekleme, kayıtlı profilleri listeleme ve görüntüleme.
-> - Yönetim paneli: yönetici girişi ve müşteri/hayvan kayıtlarının salt okunur listesi (arama ile).
+> - Aydınlatma metninin güncel sürümünü onaylamamış müşteri, girişten sonra onay ekranını geçmeden devam edemez.
+> - Yönetim paneli: yönetici girişi ve müşteri/hayvan kayıtlarının salt okunur listesi (arama ve KVKK onay bilgisiyle).
 >
 > Henüz katalog, mama takibi, sipariş, kargo, indirim, kampanya veya bildirim özelliği yok.
 
@@ -26,7 +28,8 @@ Anka-fc/
 │   │   ├── src/app/       Ekranlar (her dosya bir ekran; Expo Router)
 │   │   │   ├── (auth)/    Giriş ve kayıt ekranları (oturum yokken açılır)
 │   │   │   └── (app)/     Hayvan listesi, ekleme ve detay (oturum varken açılır)
-│   │   ├── src/components/ Ortak görsel parçalar (alan, düğme vb.)
+│   │   ├── src/components/ Ortak görsel parçalar (alan, düğme, KVKK onay ekranı vb.)
+│   │   ├── src/content/kvkk.ts  KVKK aydınlatma metni ve sürümü (TASLAK, hukukçu dolduracak)
 │   │   ├── src/lib/       Supabase bağlantısı, oturum, doğrulama, veri işlemleri
 │   │   ├── assets/        Simge ve açılış görselleri (şimdilik Expo'nun varsayılanları)
 │   │   ├── app.json       Uygulama adı ve ayarları
@@ -42,11 +45,13 @@ Anka-fc/
 ├── supabase/              Arka plan (Supabase) ayarları
 │   ├── config.toml        Yerel Supabase ayarları
 │   ├── migrations/        Veritabanı tablolarını ve erişim kurallarını kuran SQL dosyaları
+│   ├── templates/         Türkçe e-posta şablonları (doğrulama ve şifre yenileme kodu)
 │   ├── functions/         Sunucu fonksiyonları, ör. günlük hatırlatma (şimdilik boş)
 │   └── seed.sql           Yerel denemeler için uydurma test verisi (şimdilik boş)
 │
 ├── scripts/               Bilgisayarında çalışan yardımcı betikler
 │   ├── create-admin.mjs   Tek yönetici hesabını oluşturur
+│   ├── reset-admin-password.mjs  Yönetici şifresini yeniler
 │   └── test-security.mjs  Kayıt ve erişim kurallarını yerel veritabanında test eder
 │
 ├── package.json           Ortak komutlar; iki uygulamayı tek yerden yönetir (npm workspaces)
@@ -153,8 +158,10 @@ npm run mobile
 ```
 
 Ekranda bir QR kodu çıkar. iPhone'da kamerayla, Android'de Expo Go'nun içinden bu kodu okut.
-Uygulamada "Kayıt olun" ile yeni bir müşteri hesabı aç, ardından "Kedi veya köpek ekle" ile hayvan ekle.
-Eklediğin kayıtlar yönetim panelinde de görünür.
+Uygulamada "Kayıt olun" ile yeni bir müşteri hesabı aç. Doğrulama kodu e-postayla gelir:
+yerelde gerçek e-posta gönderilmez, tüm e-postalar **http://127.0.0.1:54324** adresindeki deneme
+posta kutusuna (Mailpit) düşer. Kodu oradan alıp uygulamaya gir, ardından "Kedi veya köpek ekle" ile hayvan ekle.
+Eklediğin kayıtlar yönetim panelinde de görünür. "Şifremi unuttum" kodu da aynı posta kutusuna gelir.
 
 > **Telefonda "Arka plana ulaşılamadı" yazıyorsa:** Telefon `127.0.0.1` adresiyle bilgisayarına
 > ulaşamaz. `apps/mobile/.env` dosyasında bu adresi bilgisayarının yerel IP adresiyle değiştir
@@ -183,10 +190,12 @@ Bu komutların hepsi proje kök klasöründe çalıştırılır.
 | `npm run db:stop` | Yerel Supabase'i durdurur |
 | `npm run db:reset` | Yerel veritabanını silip `migrations` ve `seed.sql` ile yeniden kurar |
 | `npm run admin:create -- <e-posta>` | Tek yönetici hesabını oluşturur |
+| `npm run admin:reset-password` | Yönetici şifresini unutulduğunda yeni şifre üretir |
 | `npm run db:test` | Kayıt, giriş ve erişim kurallarını yerel veritabanında test eder (uydurma demo kullanıcılarla; iş bitince siler) |
 | `npm run typecheck` | İki uygulamada da kod hatası kontrolü yapar |
 | `npm run admin:build` | Yönetim panelinin yayına hazır hâlini derler (yayınlamaz) |
 
+Yerel Supabase'in gönderdiği e-postalar (doğrulama ve şifre yenileme kodları) http://127.0.0.1:54324 adresinde görünür.
 Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http://127.0.0.1:54323 (Supabase Studio) adresini aç.
 
 ---
@@ -197,12 +206,19 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 |---|---|
 | E-posta ve şifre | Supabase'in giriş sistemi (`auth.users`). Şifre düz metin olarak değil, şifrelenmiş (hash) olarak saklanır. |
 | Ad, soyad, telefon, adres | `profiles` tablosu. Kayıt anında veritabanı tarafından oluşturulur. |
+| KVKK onayları | `kvkk_acceptances` tablosu: hangi müşteri, metnin hangi sürümünü, ne zaman onayladı. Onay zamanı sunucu saatiyle yazılır; müşteri onayı değiştiremez veya silemez. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |
 
 - **Zorunlu alanlar iki yerde denetlenir:** ekranda ve veritabanında. Eksik bilgiyle gelen kayıt isteği tamamen reddedilir, yarım hesap oluşmaz.
 - **Satır bazlı erişim kuralları (RLS):** Müşteri yalnızca kendi profilini ve hayvanlarını görür ve yalnızca kendi adına hayvan ekleyebilir. Giriş yapmamış kişi hiçbir kaydı göremez.
 - **Yönetici yetkisi** hesabın sunucu tarafındaki `app_metadata.role = admin` bilgisinden gelir. Bu bilgiyi yalnızca `npm run admin:create` betiği gizli anahtarla atayabilir; müşteri kendine yönetici yetkisi veremez. Yönetici kayıtları yalnızca okuyabilir.
 - Şifreler en az 8 karakter olmalıdır.
+- **E-posta doğrulaması zorunludur:** e-postasını 6 haneli kodla doğrulamayan müşteri giriş yapamaz.
+- **Şifre yenileme** e-postaya gelen 6 haneli kodla yapılır. Bir e-postayla hesap olup olmadığı ekranda belli edilmez.
+- **KVKK:** Kayıtta aydınlatma metni onayı zorunludur; onaysız kayıt veritabanında da reddedilir.
+  Metin değiştiğinde `apps/mobile/src/content/kvkk.ts` içindeki `KVKK_VERSION` değiştirilir; müşteriler bir sonraki girişte yeni sürümü onaylar.
+  **Metin şu an taslaktır**; gerçek kullanıma geçmeden hukuk danışmanı tarafından doldurulmalıdır.
+- Yöneticiye iki adımlı doğrulama eklenmemiştir (karar).
 - Bu kuralların hepsi `npm run db:test` ile gerçek (yerel) veritabanında test edilir.
 
 ## Güvenlik kuralları
@@ -218,7 +234,8 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 
 Yerel geliştirme için **hiçbir hesap açman gerekmiyor.** Kökteki `.env.example` yalnızca ileride bulut Supabase projesi için gereken betik ayarlarını gösterir; yerelde gerekmez. Teknik planda listelenen hesaplar daha sonraki aşamalarda gerekecek:
 
-- Supabase: bulutta gerçek proje açarken
+- Supabase: bulutta gerçek proje açarken. Bu aşamada doğrulama ve şifre yenileme e-postaları için
+  bir **e-posta gönderim hizmeti (SMTP)** de ayarlanmalı; Supabase'in yerleşik e-posta gönderimi yalnızca deneme amaçlıdır ve saatlik sınırı çok düşüktür.
 - Firebase: bildirimlere geçerken (Aşama 4)
 - Expo: mağaza derlemesi yaparken
 - Apple Developer ve Google Play Console: yayın aşamasında

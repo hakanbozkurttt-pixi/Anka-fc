@@ -20,6 +20,7 @@
     "db:reset": "supabase db reset",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "admin:create": "node --env-file-if-exists=.env scripts/create-admin.mjs",
+    "admin:reset-password": "node --env-file-if-exists=.env scripts/reset-admin-password.mjs",
     "db:test": "node --env-file-if-exists=.env scripts/test-security.mjs"
   },
   "devDependencies": {
