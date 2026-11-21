@@ -1,12 +1,13 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FoodSummary } from '../../../components/FoodSummary';
 import { Button, colors, ErrorBanner, styles as ui } from '../../../components/ui';
 import { toTurkishError } from '../../../lib/errors';
 import { listFoodRecords, type FoodRecord } from '../../../lib/food';
-import { getPet, SEX_LABEL, SPECIES_LABEL, type Pet } from '../../../lib/pets';
+import { deletePet, getPet, SEX_LABEL, SPECIES_LABEL, type Pet } from '../../../lib/pets';
+import { syncReminders } from '../../../lib/reminders';
 import { formatTurkishDate } from '../../../lib/validation';
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -15,6 +16,16 @@ function Row({ label, value }: { label: string; value: string | null }) {
       <Text style={local.rowLabel}>{label}</Text>
       <Text style={local.rowValue}>{value ?? '—'}</Text>
     </View>
+  );
+}
+
+function confirm(title: string, message: string, ok: string): Promise<boolean> {
+  if (Platform.OS === 'web') return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  return new Promise((resolve) =>
+    Alert.alert(title, message, [
+      { text: 'Vazgeç', style: 'cancel', onPress: () => resolve(false) },
+      { text: ok, style: 'destructive', onPress: () => resolve(true) },
+    ]),
   );
 }
 
@@ -83,6 +94,31 @@ export default function PetDetailScreen() {
           <Row label="Cinsiyet" value={pet.sex ? SEX_LABEL[pet.sex] : null} />
           <Row label="Kilo" value={pet.weight_kg != null ? `${String(pet.weight_kg).replace('.', ',')} kg` : null} />
           <Row label="Not" value={pet.notes} />
+
+          <Button
+            title="Bilgileri düzenle"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/pets/edit', params: { id: pet.id } })}
+          />
+          <Button
+            title="Hayvan profilini sil"
+            variant="secondary"
+            onPress={async () => {
+              const ok = await confirm(
+                'Hayvan profilini sil',
+                `${pet.name} profili ve ona ait tüm mama kayıtları ile hatırlatmalar silinecek. Bu işlem geri alınamaz.`,
+                'Sil',
+              );
+              if (!ok) return;
+              try {
+                await deletePet(pet.id);
+                syncReminders();
+                router.back();
+              } catch (e) {
+                setError(toTurkishError(e as Error));
+              }
+            }}
+          />
         </>
       ) : null}
     </ScrollView>

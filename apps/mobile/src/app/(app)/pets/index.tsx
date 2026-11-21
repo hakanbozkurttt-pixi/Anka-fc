@@ -84,6 +84,7 @@ export default function PetsScreen() {
             <>
               <Button title="Kedi veya köpek ekle" onPress={() => router.push('/pets/new')} />
               <Button title="Siparişlerim" variant="secondary" onPress={() => router.push('/orders')} />
+              <Button title="Hesabım" variant="secondary" onPress={() => router.push('/account')} />
             </>
           ) : null}
           <Button title="Çıkış yap" variant="secondary" onPress={() => supabase?.auth.signOut()} />

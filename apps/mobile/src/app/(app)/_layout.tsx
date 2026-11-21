@@ -95,6 +95,8 @@ export default function AppLayout() {
       <Stack.Screen name="pets/index" options={{ title: 'Hayvanlarım' }} />
       <Stack.Screen name="pets/new" options={{ title: 'Hayvan ekle' }} />
       <Stack.Screen name="pets/[id]" options={{ title: 'Hayvan profili' }} />
+      <Stack.Screen name="pets/edit" options={{ title: 'Hayvan bilgilerini düzenle' }} />
+      <Stack.Screen name="account" options={{ title: 'Hesabım' }} />
       <Stack.Screen name="food/new" options={{ title: 'Mama ekle' }} />
       <Stack.Screen name="food/[id]" options={{ title: 'Mama takibi' }} />
       <Stack.Screen name="orders/index" options={{ title: 'Siparişlerim' }} />

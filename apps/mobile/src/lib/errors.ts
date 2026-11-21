@@ -25,7 +25,7 @@ export function toTurkishError(error: ErrorLike): string {
     return 'Yeni şifre eski şifrenizle aynı olamaz.';
   // Veritabanının kendi Türkçe açıklamaları (sipariş ve mama kuralları) olduğu gibi gösterilir.
   if (/message_check|product_requests/i.test(message)) return 'Mesaj en fazla 160 karakter olabilir ve boş olamaz.';
-  if (/katalogda bulunamadı|bugünden sonra olamaz|sepet|satışta değil|adres girin|tarihi ve saati|ileri bir zaman|90 gün|hastaneyle iletişime|teslim aldım|yalnızca teslim edilen|adedi/i.test(message))
+  if (/katalogda bulunamadı|bugünden sonra olamaz|sepet|satışta değil|adres girin|tarihi ve saati|ileri bir zaman|90 gün|hastaneyle iletişime|bekleyen siparişiniz|teslim aldım|yalnızca teslim edilen|adedi/i.test(message))
     return message;
   if (code === 'signup_disabled') return 'Yeni kayıt şu anda kapalı.';
   if (/database error saving new user/i.test(message))

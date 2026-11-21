@@ -24,6 +24,7 @@ const run = randomBytes(4).toString('hex')
 const demoEmail = (name) => `demo-${name}-${run}@example.com`
 const password = `Demo-${randomBytes(8).toString('hex')}`
 const createdUserIds = []
+const createdOrderIds = []
 const createdProductIds = []
 const createdImagePaths = []
 
@@ -1027,6 +1028,102 @@ try {
     assert.deepEqual([r.status, r.product_id], ['rejected', null])
   })
 
+  console.log('Hayvan profilini düzenleme ve silme')
+
+  await test('müşteri kendi hayvanını düzenleyebiliyor', async () => {
+    const { error } = await a.client.from('pets').update({ name: 'Pamuk', breed: 'Demo ırk', weight_kg: 4.2 }).eq('id', pamuk.id)
+    assert.equal(error, null)
+    const { data } = await a.client.from('pets').select('breed, weight_kg').eq('id', pamuk.id).single()
+    assert.deepEqual([data.breed, Number(data.weight_kg)], ['Demo ırk', 4.2])
+  })
+
+  await test('müşteri başkasının hayvanını düzenleyemiyor ve silemiyor; yönetici de değiştiremiyor', async () => {
+    await b.client.from('pets').update({ name: 'Değişti' }).eq('id', pamuk.id)
+    await b.client.from('pets').delete().eq('id', pamuk.id)
+    await adminClient.from('pets').update({ name: 'Değişti' }).eq('id', pamuk.id)
+    const { data } = await service.from('pets').select('name').eq('id', pamuk.id).single()
+    assert.equal(data.name, 'Pamuk')
+  })
+
+  await test('müşteri hayvanın sahibini değiştiremiyor; geçersiz bilgiler reddediliyor', async () => {
+    const owner = await a.client.from('pets').update({ owner_id: b.data.user.id }).eq('id', pamuk.id)
+    const bad = await a.client.from('pets').update({ species: 'bird' }).eq('id', pamuk.id)
+    assert.ok(owner.error)
+    assert.ok(bad.error)
+  })
+
+  await test('hayvan silinince mama kayıtları da siliniyor', async () => {
+    const { data: pet } = await a.client.from('pets').insert({ species: 'cat', name: 'Demo Silinecek' }).select('id').single()
+    const { data: rec } = await a.client.from('food_records').insert({ pet_id: pet.id, product_id: catProduct.id, daily_grams: 60, start_date: trDate(0) }).select('id').single()
+    const del = await a.client.from('pets').delete().eq('id', pet.id)
+    assert.equal(del.error, null)
+    assert.equal((await service.from('pets').select('id').eq('id', pet.id)).data.length, 0)
+    assert.equal((await service.from('food_records').select('id').eq('id', rec.id)).data.length, 0)
+  })
+
+  console.log('Hesap silme')
+  const z = await signUpAndVerify('silinecek', demoCustomer('Silinecek'))
+  const zId = z.data.user.id
+  const { data: zPet } = await z.client.from('pets').insert({ species: 'dog', name: 'Demo Hesap Köpeği' }).select('id').single()
+  await z.client.from('food_records').insert({ pet_id: zPet.id, product_id: catProduct.id, daily_grams: 60, start_date: trDate(0) })
+  const { data: zReq } = await z.client.from('product_requests').insert({ message: 'Demo: silinecek hesabın talebi' }).select('id').single()
+  const { data: zPrivate } = await adminClient.rpc('admin_approve_request', {
+    request_id: zReq.id, brand: 'TEST Marka', name: `TEST silinecek özel ${run}`, species: 'dog', package_grams: 1000, price_try: 100,
+  })
+  const { data: zOrder } = await z.client.rpc('place_order', {
+    items: [{ product_id: zPrivate, quantity: 1 }, { product_id: catProduct.id, quantity: 1 }], delivery_type: 'pickup',
+  })
+  createdOrderIds.push(zOrder.id)
+
+  await test('siparişte müşteri adı, telefonu ve e-postasının kopyası saklanıyor', async () => {
+    const { data } = await service.from('orders').select('customer_name, customer_phone, customer_email').eq('id', zOrder.id).single()
+    assert.deepEqual(data, { customer_name: 'Silinecek Demo', customer_phone: '0500 000 00 00', customer_email: demoEmail('silinecek') })
+  })
+
+  await test('bekleyen siparişi varken hesap silinemiyor', async () => {
+    const { error } = await z.client.rpc('delete_my_account')
+    assert.match(error?.message ?? '', /Bekleyen siparişiniz varken/)
+    await adminClient.rpc('admin_set_order_status', { order_id: zOrder.id, new_status: 'approved' })
+    const again = await z.client.rpc('delete_my_account')
+    assert.match(again.error?.message ?? '', /Bekleyen siparişiniz varken/)
+    await adminClient.rpc('admin_set_order_status', { order_id: zOrder.id, new_status: 'delivered' })
+  })
+
+  await test('yönetici hesabı bu işlemle silinemiyor (müşteri hesabı değil)', async () => {
+    const { error } = await adminClient.rpc('delete_my_account')
+    assert.ok(error)
+  })
+
+  await test('müşteri hesabını silebiliyor: giriş, profil, hayvan, mama, KVKK, talep ve özel ürün siliniyor', async () => {
+    const { error } = await z.client.rpc('delete_my_account')
+    assert.equal(error, null)
+    const { data: u } = await service.auth.admin.getUserById(zId)
+    assert.equal(u.user, null)
+    const counts = await Promise.all([
+      service.from('profiles').select('id').eq('id', zId),
+      service.from('pets').select('id').eq('owner_id', zId),
+      service.from('food_records').select('id').eq('owner_id', zId),
+      service.from('kvkk_acceptances').select('id').eq('user_id', zId),
+      service.from('product_requests').select('id').eq('customer_id', zId),
+      service.from('products').select('id').eq('id', zPrivate),
+    ])
+    assert.deepEqual(counts.map((c) => c.data.length), [0, 0, 0, 0, 0, 0])
+    const login = await newClient().auth.signInWithPassword({ email: demoEmail('silinecek'), password })
+    assert.ok(login.error)
+  })
+
+  await test('geçmiş sipariş hastane kayıtlarında kopya bilgilerle kalıyor', async () => {
+    const { data } = await adminClient
+      .from('orders')
+      .select('customer_id, customer_name, customer_phone, status, total_try, order_items(product_id, product_name)')
+      .eq('id', zOrder.id)
+      .single()
+    assert.deepEqual([data.customer_id, data.customer_name, data.status], [null, 'Silinecek Demo', 'delivered'])
+    assert.equal(data.order_items.length, 2)
+    const priv = data.order_items.find((i) => i.product_name === `TEST silinecek özel ${run}`)
+    assert.equal(priv.product_id, null) // özel ürün silindi, kalemdeki ad ve fiyat kopyası duruyor
+  })
+
   await test('yönetici tüm siparişleri görüyor', async () => {
     const { data } = await adminClient.from('orders').select('id').eq('customer_id', a.data.user.id)
     assert.ok(data.length >= 4)
@@ -1034,6 +1131,7 @@ try {
 } finally {
   // Test siparişlerini, ürünlerini ve görsellerini temizle
   await service.from('orders').delete().in('customer_id', createdUserIds)
+  if (createdOrderIds.length) await service.from('orders').delete().in('id', createdOrderIds)
   await service.from('campaigns').delete().like('name', `TEST % ${run}`)
   if (createdProductIds.length) {
     const { error } = await service.from('products').delete().in('id', createdProductIds)

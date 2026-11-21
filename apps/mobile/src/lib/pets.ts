@@ -56,3 +56,14 @@ export async function createPet(pet: NewPet): Promise<void> {
   const { error } = await client().from('pets').insert(pet);
   if (error) throw error;
 }
+
+export async function updatePet(id: string, changes: NewPet): Promise<void> {
+  const { error } = await client().from('pets').update(changes).eq('id', id);
+  if (error) throw error;
+}
+
+/** Hayvanı ve ona ait mama kayıtlarını siler (veritabanı zincirleme siler). */
+export async function deletePet(id: string): Promise<void> {
+  const { error } = await client().from('pets').delete().eq('id', id);
+  if (error) throw error;
+}

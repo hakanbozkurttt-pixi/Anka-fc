@@ -8,6 +8,7 @@ const COLUMNS: string = [
   'id, order_no, status, delivery_type, delivery_address, delivery_date, delivery_time',
   'discount_kind, discount_pct, items_list_total_try, discount_total_try',
   'items_total_try, shipping_fee_try, total_try, status_changed_at, status_changed_by, created_at',
+  'customer_id, customer_name, customer_phone',
   'customer:profiles(first_name, last_name, phone, email)',
   'order_items(id, brand, product_name, package_grams, list_price_try, discount_source, discount_pct, campaign_name, unit_price_try, quantity, line_total_try)',
 ].join(', ')
@@ -158,7 +159,9 @@ export function OrdersPage() {
           <dl className="details">
             <dt>Müşteri</dt>
             <dd>
-              {o.customer ? `${o.customer.first_name} ${o.customer.last_name} · ${o.customer.phone}` : '—'}
+              {o.customer
+                ? `${o.customer.first_name} ${o.customer.last_name} · ${o.customer.phone}`
+                : `${o.customer_name ?? '—'} · ${o.customer_phone ?? ''} (müşteri hesabını sildi)`}
             </dd>
             <dt>Teslimat</dt>
             <dd>

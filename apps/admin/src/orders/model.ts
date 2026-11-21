@@ -60,6 +60,10 @@ export type AdminOrder = {
   status_changed_by: 'customer' | 'admin'
   created_at: string
   customer: { first_name: string; last_name: string; phone: string; email: string } | null
+  /** Sipariş anındaki müşteri bilgisi kopyası (hesap silinse de kalır) */
+  customer_id: string | null
+  customer_name: string | null
+  customer_phone: string | null
   order_items: {
     id: string
     brand: string
@@ -84,9 +88,9 @@ export function matchesOrder(o: AdminOrder, query: string, date: string): boolea
   }
   const q = query.trim().toLocaleLowerCase('tr-TR')
   if (!q) return true
-  const name = `${o.customer?.first_name ?? ''} ${o.customer?.last_name ?? ''}`.toLocaleLowerCase('tr-TR')
+  const name = (o.customer ? `${o.customer.first_name} ${o.customer.last_name}` : (o.customer_name ?? '')).toLocaleLowerCase('tr-TR')
   const qDigits = q.replace(/[^0-9]/g, '')
-  const phone = (o.customer?.phone ?? '').replace(/[^0-9]/g, '')
+  const phone = (o.customer?.phone ?? o.customer_phone ?? '').replace(/[^0-9]/g, '')
   return (
     name.includes(q) ||
     String(o.order_no) === q.replace('#', '') ||
