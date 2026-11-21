@@ -41,7 +41,7 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Mama Takip</Text>
+        <Text style={styles.title}>Anka Friends Club</Text>
         <Text style={[styles.muted, { marginBottom: 16 }]}>Hesabınıza e-posta ve şifrenizle giriş yapın.</Text>
 
         <ErrorBanner message={formError} />

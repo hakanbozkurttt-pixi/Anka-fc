@@ -20,7 +20,7 @@ export const KVKK_SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: '1. Veri sorumlusu',
-    body: '[Hastanenin unvanı, adresi ve iletişim bilgileri hukuk danışmanı tarafından eklenecektir.]',
+    body: 'Anka Hayvan Hastanesi. [Tam ticari unvan, adres ve iletişim bilgileri hukuk danışmanı tarafından eklenecektir.]',
   },
   {
     heading: '2. İşlenen kişisel veriler',

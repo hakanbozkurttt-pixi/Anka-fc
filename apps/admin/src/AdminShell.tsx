@@ -44,7 +44,7 @@ export function AdminShell({ email }: { email: string }) {
   return (
     <div className="shell">
       <header className="topbar">
-        <strong>Hastane Yönetim Paneli</strong>
+        <strong>Anka Friends Club · Yönetim Paneli</strong>
         <div className="topbar-right">
           <span className="muted">{email}</span>
           <button type="button" className="secondary" onClick={() => supabase?.auth.signOut()}>

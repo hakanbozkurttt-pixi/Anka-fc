@@ -1,4 +1,6 @@
-# Anka-fc: Mama Takip Uygulaması
+# Anka Friends Club
+
+Anka Hayvan Hastanesi'nin mama takip ve sipariş uygulaması (proje adı: Anka-fc).
 
 Bu depo, veteriner hastanesinin mama takip sistemini içerir. Sistem üç parçadan oluşur:
 

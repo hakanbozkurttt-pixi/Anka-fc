@@ -256,11 +256,11 @@ otp_expiry = 3600
 # Türkçe e-posta şablonları: bağlantı yerine 6 haneli kod gönderilir;
 # müşteri kodu telefon uygulamasına girer.
 [auth.email.template.confirmation]
-subject = "Mama Takip: e-posta doğrulama kodunuz"
+subject = "Anka Friends Club: e-posta doğrulama kodunuz"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Mama Takip: şifre yenileme kodunuz"
+subject = "Anka Friends Club: şifre yenileme kodunuz"
 content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template

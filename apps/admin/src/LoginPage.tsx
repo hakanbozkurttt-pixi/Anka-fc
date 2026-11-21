@@ -25,7 +25,7 @@ export function LoginPage({ notice }: { notice?: string | null }) {
 
   return (
     <main className="shell narrow">
-      <h1>Hastane Yönetim Paneli</h1>
+      <h1>Anka Friends Club · Yönetim Paneli</h1>
       <p className="muted">Yönetici hesabıyla giriş yapın.</p>
       {notice ? <p className="status status-error">{notice}</p> : null}
       {error ? (

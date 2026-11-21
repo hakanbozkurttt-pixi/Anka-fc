@@ -1,13 +1,18 @@
 {
   "expo": {
-    "name": "Mama Takip",
-    "slug": "mama-takip",
+    "name": "Anka Friends Club",
+    "slug": "anka-friends-club",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ankahayvanhastanesi.friendsclub",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -16,7 +21,9 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ankahayvanhastanesi.friendsclub",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -25,6 +32,6 @@
       "expo-router",
       "expo-notifications"
     ],
-    "scheme": "mamatakip"
+    "scheme": "ankafriendsclub"
   }
 }

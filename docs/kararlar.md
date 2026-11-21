@@ -87,3 +87,9 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
   "(müşteri hesabını sildi)" olarak görünür. Müşterinin uygulamadan sipariş geçmişine erişimi sona erer.
 - **Hukuki inceleme gerekir:** silinen müşterinin siparişlerde kalan ad, telefon, e-posta ve teslimat adresinin ne kadar
   süre saklanacağı ve gerekçesi (KVKK).
+
+## Uygulama adı ve yayıncı — 21.11.2026
+- Uygulamanın adı: **Anka Friends Club**. Mağazada **Anka Hayvan Hastanesi** adına yayınlanacak.
+- Önerilen paket kimliği: `com.ankahayvanhastanesi.friendsclub` (**onay bekliyor**; ilk gönderimden sonra değiştirilemez).
+- Uygulama yalnızca iPhone için (iPad desteği kapalı).
+- Mağaza hazırlığı ve kontrol listesi: `docs/app-store.md`.

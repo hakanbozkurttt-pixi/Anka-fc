@@ -37,7 +37,7 @@ export default function App() {
   if (!isSupabaseConfigured) {
     return (
       <main className="shell">
-        <h1>Hastane Yönetim Paneli</h1>
+        <h1>Anka Friends Club · Yönetim Paneli</h1>
         <p className="status status-error">
           Arka plan ayarı yok. apps/admin/.env.example dosyasını .env olarak kopyalayıp doldurun.
         </p>
