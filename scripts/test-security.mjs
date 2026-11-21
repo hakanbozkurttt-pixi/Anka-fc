@@ -1035,7 +1035,10 @@ try {
   // Test siparişlerini, ürünlerini ve görsellerini temizle
   await service.from('orders').delete().in('customer_id', createdUserIds)
   await service.from('campaigns').delete().like('name', `TEST % ${run}`)
-  if (createdProductIds.length) await service.from('products').delete().in('id', createdProductIds)
+  if (createdProductIds.length) {
+    const { error } = await service.from('products').delete().in('id', createdProductIds)
+    if (error) console.error('Temizlik: test ürünleri silinemedi:', error.message)
+  }
   if (createdImagePaths.length) await service.storage.from('product-images').remove(createdImagePaths)
   // Demo kullanıcılarını temizle (profiller ve hayvanlar zincirleme silinir).
   for (const id of createdUserIds) await service.auth.admin.deleteUser(id)

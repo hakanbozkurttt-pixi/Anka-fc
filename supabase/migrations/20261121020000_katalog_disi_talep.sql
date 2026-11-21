@@ -57,8 +57,9 @@ create table public.product_requests (
   product_id    uuid references public.products (id) on delete set null,
   decided_at    timestamptz,
   created_at    timestamptz not null default now(),
-  check ((status = 'pending') = (decided_at is null)),
-  check (status <> 'approved' or product_id is not null)
+  check ((status = 'pending') = (decided_at is null))
+  -- Not: Onaylanan talebe ürün bağlanması admin_approve_request ile sağlanır. Ürün sonradan
+  -- silinirse (ör. müşteri hesabı silindiğinde) talep kaydı ürünsüz kalabilir.
 );
 
 create index product_requests_customer_idx on public.product_requests (customer_id);

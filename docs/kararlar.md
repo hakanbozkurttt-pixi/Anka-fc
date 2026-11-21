@@ -65,3 +65,14 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
   bugünden ve siparişteki paket adediyle başlar. Cevap vermezse sayaç mevcut mama bitince kendiliğinden yeniden başlar.
 - Müşteri kendi yaptığı iptal veya "Teslim aldım" için bildirim almaz; hastanenin yaptığı değişiklikleri uygulamayı açınca görür.
 - Adrese teslimat tarihi en fazla 90 gün sonrası olabilir (teknik sınır, değiştirilebilir).
+
+## Katalog dışı ürün talebi — 21.11.2026 (geliştirildi)
+- Müşteri **"Katalog dışı ürün talebi"** düğmesiyle en fazla **160 karakterlik** bir mesaj gönderir; mesaj yöneticiye iletilir.
+  Düğme sipariş ekranında, mama ekleme ekranında ve "Siparişlerim" sayfasında bulunur.
+- Yönetici panelin **Talepler** sekmesinde mesajı görür; marka, ürün adı, hayvan türü, paket gramı ve **fiyatı** girerek onaylar
+  (fiyatsız onay yok) veya reddeder. Beş marka sınırı yalnızca katalog içindir.
+- Onaylanan ürün kataloğa eklenmez; **yalnızca talebi giren müşteri** görür, sipariş verebilir ve mama takibine ekleyebilir.
+- Bu ürünlerde **sabit indirim ve kampanya uygulanmaz**; yöneticinin girdiği fiyat nihaidir. Kampanyaya eklenemez.
+- Her talep ayrı değerlendirilir (aynı ürünü isteyen her müşteriye ayrı özel ürün açılır).
+- Yönetici fiyatı sonradan değiştirebilir; yalnızca yeni siparişlere uygulanır.
+- Sonuç (onay/ret) müşteriye uygulamayı açınca bildirim olarak gösterilir; "Taleplerim" sayfasında da görünür.

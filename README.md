@@ -36,7 +36,10 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 > - **Kampanyalar:** panelin **Kampanyalar** sekmesinden yüzde veya sabit fiyatlı kampanya; aynı üründe sabit indirimle
 >   birlikte geçerliyse müşteri için daha avantajlı olan tek indirim uygulanır.
 >
-> Katalog **boştur**; ürün bilgilerini hastane girecek. Henüz katalog dışı ürün talebi yok.
+> - **Katalog dışı ürün talebi:** müşteri 160 karakterlik mesajla talep gönderir; yönetici panelin **Talepler** sekmesinden
+>   fiyat girerek onaylar veya reddeder. Onaylanan ürün yalnızca o müşteriye özeldir ve indirim uygulanmaz.
+>
+> Katalog **boştur**; ürün bilgilerini hastane girecek.
 
 ---
 
@@ -254,6 +257,7 @@ Yerel Supabase çalışırken veritabanını görsel olarak incelemek için http
 | Ürün görselleri | `product-images` deposu. Herkes görüntüleyebilir (ürün fotoğrafı kişisel veri değildir); yalnızca yönetici yükler/siler. JPEG, PNG, WebP; en fazla 5 MB. |
 | Mama takip kayıtları | `food_records` tablosu (paket sayısı, günlük gram, başlangıç, hatırlatma ayarı). Bitiş ve hatırlatma tarihi `food_records_with_schedule` görünümünde, Türkiye saatine göre hesaplanır. Müşteri yalnızca kendi kayıtlarını görür ve değiştirir; yönetici yalnızca okur. |
 | Siparişler | `orders` ve `order_items` tabloları. Fiyatlar ve kargo ücreti sipariş anında siparişe yazılır; sonradan değişmez. Müşteri yalnızca kendi siparişlerini görür; sipariş verme, iptal, teslim şekli değiştirme ve durum değişikliği yalnızca kurallı veritabanı işlemleriyle yapılır (müşteri fiyat veya durumu doğrudan değiştiremez). |
+| Katalog dışı talepler | `product_requests` tablosu (en fazla 160 karakterlik mesaj). Onaylanınca `products` tablosuna yalnızca o müşteriye özel ürün eklenir (`owner_customer_id`); diğer müşteriler göremez, katalog listesinde görünmez, indirim uygulanmaz. |
 | Kampanyalar | `campaigns` ve `campaign_products` tabloları. Yalnızca yönetici yazar; müşteriler yalnızca o gün geçerli kampanyaları görür. Uygulanan indirim (kaynak, oran, kampanya adı) sipariş kalemine yazılır. |
 | Ayarlar | `app_settings` tablosu: adrese teslimat kargo ücreti (başlangıçta 200 TL), ilk sipariş indirimi (%20) ve sonraki siparişlerin indirimi (%10). Herkes okur, yalnızca yönetici değiştirir. |
 | Hayvan profilleri | `pets` tablosu. Zorunlu alanlar tür (kedi/köpek) ve ad; doğum tarihi, ırk, cinsiyet, kilo ve not isteğe bağlı. |

@@ -42,7 +42,10 @@ export default function NewRequestScreen() {
         <TextInput
           accessibilityLabel="Mesajınız"
           value={message}
-          onChangeText={(t) => setMessage(t.slice(0, REQUEST_MAX_LENGTH))}
+          onChangeText={(t) => {
+            setMessage(t.slice(0, REQUEST_MAX_LENGTH));
+            if (error) setError(null);
+          }}
           maxLength={REQUEST_MAX_LENGTH}
           multiline
           numberOfLines={4}
