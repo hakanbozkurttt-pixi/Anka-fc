@@ -39,6 +39,9 @@ Teknik kararlar onaylanan **"Mama Takip Uygulaması: Teknik Plan"** belgesine da
 > - **Katalog dışı ürün talebi:** müşteri 160 karakterlik mesajla talep gönderir; yönetici panelin **Talepler** sekmesinden
 >   fiyat girerek onaylar veya reddeder. Onaylanan ürün yalnızca o müşteriye özeldir ve indirim uygulanmaz.
 >
+> - **Hayvan profili düzenleme/silme ve hesap silme:** müşteri "Hesabım" ekranından şifresini girerek hesabını silebilir;
+>   bekleyen siparişi varken silemez. Geçmiş siparişler hastanede kopya bilgilerle kalır.
+>
 > Katalog **boştur**; ürün bilgilerini hastane girecek.
 
 ---

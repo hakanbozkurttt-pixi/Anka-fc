@@ -76,3 +76,14 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
 - Her talep ayrı değerlendirilir (aynı ürünü isteyen her müşteriye ayrı özel ürün açılır).
 - Yönetici fiyatı sonradan değiştirebilir; yalnızca yeni siparişlere uygulanır.
 - Sonuç (onay/ret) müşteriye uygulamayı açınca bildirim olarak gösterilir; "Taleplerim" sayfasında da görünür.
+
+## Hayvan profili ve hesap silme — 21.11.2026 (geliştirildi)
+- Müşteri hayvan profilini **düzenleyebilir** ve **silebilir**. Silinen hayvanın mama kayıtları ve hatırlatmaları da silinir.
+- Müşteri **hesabını silebilir** ("Hesabım" ekranı). Yanlışlıkla silmeye karşı şifre yeniden sorulur.
+- **Onay bekleyen veya onaylanmış siparişi** olan müşteri hesabını silemez (önce iptal eder / hastaneyle görüşür).
+- Hesap silinince giriş hesabı, profil, hayvanlar, mama kayıtları, KVKK onayları, katalog dışı talepler ve müşteriye özel
+  ürünler silinir.
+- **Geçmiş siparişler hastane kayıtlarında kalır:** sipariş anındaki ad, telefon ve e-posta siparişe kopyalanır; panelde
+  "(müşteri hesabını sildi)" olarak görünür. Müşterinin uygulamadan sipariş geçmişine erişimi sona erer.
+- **Hukuki inceleme gerekir:** silinen müşterinin siparişlerde kalan ad, telefon, e-posta ve teslimat adresinin ne kadar
+  süre saklanacağı ve gerekçesi (KVKK).
