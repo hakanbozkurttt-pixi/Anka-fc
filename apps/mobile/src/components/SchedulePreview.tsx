@@ -21,7 +21,7 @@ export function SchedulePreview(p: Props) {
   const total = p.packageGrams * p.packageCount;
   const s = foodSchedule(p.startDate, total, p.dailyGrams, p.reminderDays, p.today);
   return (
-    <View style={{ backgroundColor: '#e3f1ea', borderRadius: 8, padding: 12, marginBottom: 12, gap: 4 }}>
+    <View style={{ backgroundColor: colors.primaryTint, borderRadius: 8, padding: 12, marginBottom: 12, gap: 4 }}>
       <Text style={{ color: colors.text }}>
         {formatKg(total)} ÷ günde {p.dailyGrams} g = <Text style={{ fontWeight: '700' }}>{s.supplyDays} gün</Text>
       </Text>

@@ -91,6 +91,7 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
 ## Uygulama adı ve yayıncı — 21.11.2026
 - Uygulamanın adı: **Anka Friends Club**. Mağazada **Anka Hayvan Hastanesi** adına yayınlanacak.
 - Paket kimliği: `com.ankahayvanhastanesi.friendsclub` (web sitesi ankahayvanhastanesi.com; ilk gönderimden sonra değiştirilemez).
-- Uygulama simgesi hastane logosundaki kanatlı amblemden üretildi; giriş ekranlarında tam logo var (`docs/brand`).
+- Uygulama simgesi hastane logosundaki kanatlı amblemden üretildi ve onaylandı; giriş ekranlarında tam logo var (`docs/brand`).
+- Ana renk logonun kırmızısı: düğme ve yazılarda okunabilirlik için bir ton koyusu `#d40d12` (logo: `#f20007`). Olumlu durumlar (Onaylandı, indirim) yeşil, uyarılar sarı kalır.
 - Uygulama yalnızca iPhone için (iPad desteği kapalı).
 - Mağaza hazırlığı ve kontrol listesi: `docs/app-store.md`.

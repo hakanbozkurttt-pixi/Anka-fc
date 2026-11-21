@@ -13,7 +13,9 @@ export const colors = {
   text: '#1f2933',
   muted: '#52606d',
   border: '#cbd2d9',
-  primary: '#2f6f4f',
+  // Anka Hayvan Hastanesi logosundaki kırmızı (#f20007) — beyaz yazıyla okunabilirlik için bir ton koyusu
+  primary: '#d40d12',
+  primaryTint: '#fdecec',
   primaryText: '#ffffff',
   error: '#b42318',
   errorBg: '#fef3f2',
@@ -268,7 +270,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
-  choiceSelected: { borderColor: colors.primary, backgroundColor: '#e3f1ea' },
+  choiceSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
   choiceText: { fontSize: 16, color: colors.text },
   choiceTextSelected: { color: colors.primary, fontWeight: '600' },
   banner: {

@@ -19,7 +19,9 @@ export function ReminderSettings({ enabled, days, onEnabledChange, onDaysChange 
           accessibilityLabel="Mama bitmeden hatırlat"
           value={enabled}
           onValueChange={onEnabledChange}
-          trackColor={{ true: colors.primary }}
+          trackColor={{ true: colors.primary, false: colors.border }}
+          thumbColor="#ffffff"
+          ios_backgroundColor={colors.border}
         />
       </View>
       {enabled ? (

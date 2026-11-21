@@ -118,7 +118,7 @@ export default function NewOrderScreen() {
       <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
         <ErrorBanner message={formError} />
         {discount.pct > 0 ? (
-          <View style={{ backgroundColor: '#e3f1ea', borderRadius: 8, padding: 12 }}>
+          <View style={{ backgroundColor: colors.primaryTint, borderRadius: 8, padding: 12 }}>
             <Text style={{ color: colors.text, fontWeight: '600' }}>
               {discount.kind === 'first_order'
                 ? `İlk siparişinize %${String(discount.pct).replace('.', ',')} indirim!`
