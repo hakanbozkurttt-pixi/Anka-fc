@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import logo from './assets/logo.png'
 import { supabase } from './lib/supabase'
 
 export function LoginPage({ notice }: { notice?: string | null }) {
@@ -25,6 +26,7 @@ export function LoginPage({ notice }: { notice?: string | null }) {
 
   return (
     <main className="shell narrow">
+      <img src={logo} alt="Anka Hayvan Hastanesi" className="login-logo" />
       <h1>Anka Friends Club · Yönetim Paneli</h1>
       <p className="muted">Yönetici hesabıyla giriş yapın.</p>
       {notice ? <p className="status status-error">{notice}</p> : null}

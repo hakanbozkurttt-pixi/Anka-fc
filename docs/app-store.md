@@ -15,11 +15,11 @@ Köşeli parantezli `[ ... ]` kısımlar hastane tarafından doldurulmalıdır.
 | 1 | D-U-N-S numarası başvurusu (Anka Hayvan Hastanesi adına, ücretsiz; günler–haftalar sürebilir) | Hastane | Bekliyor |
 | 2 | Apple Developer Program — kurumsal hesap, hastane adına ve kurumsal e-postayla (yıllık 99 USD) | Hastane | Bekliyor |
 | 3 | Expo hesabı (ücretsiz), hastanenin kurumsal e-postasıyla | Hastane | Bekliyor |
-| 4 | Paket kimliğinin onayı: `com.ankahayvanhastanesi.friendsclub` (ilk gönderimden sonra değiştirilemez) | Hastane | **Onay bekliyor** |
+| 4 | Paket kimliği: `com.ankahayvanhastanesi.friendsclub` (web sitesi ankahayvanhastanesi.com'a göre; ilk gönderimden sonra değiştirilemez) | Hastane | ✅ Kesinleşti |
 | 5 | KVKK aydınlatma metninin tamamlanması (uygulamadaki taslak metin değiştirilmeli) | Hukuk danışmanı | Bekliyor |
 | 6 | Gizlilik politikası sayfası (internette açılan bir adres) | Hukuk danışmanı + hastane | Bekliyor |
 | 7 | Destek adresi (web sayfası veya e-posta) | Hastane | Bekliyor |
-| 8 | Uygulama simgesi 1024×1024 (şu an Expo'nun varsayılan simgesi) | Hastane / tasarımcı | Bekliyor |
+| 8 | Uygulama simgesi 1024×1024 — hastane logosundaki amblemden üretildi (`docs/brand`) | Geliştirici | ✅ Hazır (hastane onayı) |
 | 9 | Bulut ortamı (Supabase), e-posta gönderim hizmeti, yönetim panelinin yayını | Karar: hastane · Kurulum: geliştirici | Bekliyor |
 | 10 | Gerçek ürün kataloğunun yüklenmesi (boş katalog ret sebebi olabilir) | Hastane | Bekliyor |
 | 11 | İnceleme ekibi için deneme müşteri hesabı (bulut ortamında) | Geliştirici | Bulut sonrası |
@@ -56,7 +56,7 @@ iPad ekran görüntüsü istenmez), şifreleme beyanı (yalnızca standart HTTPS
 >
 > Ödeme uygulama içinde alınmaz; teslim alırken veya teslimatta yapılır.
 
-**Destek adresi:** `[https://… veya e-posta]` · **Gizlilik politikası adresi:** `[https://…]`
+**Web sitesi:** https://ankahayvanhastanesi.com · **Destek adresi:** `[https://ankahayvanhastanesi.com/… veya e-posta]` · **Gizlilik politikası adresi:** `[https://…]`
 
 **Yaş sınıflandırması:** 4+ (şiddet, kumar, yetişkin içerik vb. yok; kullanıcıların birbirine mesaj gönderdiği
 bir bölüm yok; katalog dışı talep yalnızca hastaneye iletilir).

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text } from 'react-native';
 
 import { Button, ErrorBanner, Field, LinkText, styles } from '../../components/ui';
 import { toTurkishError } from '../../lib/errors';
@@ -41,6 +41,12 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+        <Image
+          source={require('../../../assets/logo.png')}
+          accessibilityLabel="Anka Hayvan Hastanesi"
+          resizeMode="contain"
+          style={{ width: '100%', height: 140, marginBottom: 12 }}
+        />
         <Text style={styles.title}>Anka Friends Club</Text>
         <Text style={[styles.muted, { marginBottom: 16 }]}>Hesabınıza e-posta ve şifrenizle giriş yapın.</Text>
 
