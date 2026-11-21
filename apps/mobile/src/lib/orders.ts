@@ -49,6 +49,8 @@ export type ShopProduct = {
   package_grams: number;
   price_try: number;
   description: string | null;
+  /** Doluysa: katalog dışı talep sonucu yalnızca bu müşteriye özel ürün (indirim uygulanmaz) */
+  owner_customer_id: string | null;
 };
 
 export type DeliveryInput = {
@@ -104,7 +106,7 @@ export async function getOrder(id: string): Promise<Order | null> {
 export async function listShopProducts(): Promise<ShopProduct[]> {
   const { data, error } = await client()
     .from('products')
-    .select('id, brand, name, species, series, flavor, age_group, package_grams, price_try, description')
+    .select('id, brand, name, species, series, flavor, age_group, package_grams, price_try, description, owner_customer_id')
     .order('brand')
     .order('name')
     .order('package_grams')

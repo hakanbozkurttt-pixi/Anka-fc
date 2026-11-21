@@ -104,9 +104,12 @@ export default function NewFoodScreen() {
         ) : loadingCatalog ? (
           <ActivityIndicator />
         ) : catalog.length === 0 ? (
-          <Text style={[styles.muted, { marginBottom: 12 }]}>
-            Katalogda bu hayvan türüne uygun mama henüz yok. Hastane ürünleri ekledikten sonra seçebilirsiniz.
-          </Text>
+          <>
+            <Text style={[styles.muted, { marginBottom: 12 }]}>
+              Katalogda bu hayvan türüne uygun mama henüz yok. Hastane ürünleri ekledikten sonra seçebilirsiniz.
+            </Text>
+            <Button title="Katalog dışı ürün talebi" variant="secondary" onPress={() => router.push('/requests/new')} />
+          </>
         ) : (
           <>
             <Field label="Mama ara" value={query} onChangeText={setQuery} placeholder="Marka veya ürün adı" error={errors.product} />
@@ -133,6 +136,8 @@ export default function NewFoodScreen() {
               <Text style={styles.muted}>Daha fazla sonuç var; aramayı daraltın.</Text>
             ) : null}
             {filtered.length === 0 ? <Text style={styles.muted}>Aramanıza uygun mama bulunamadı.</Text> : null}
+            <Text style={[styles.muted, { marginTop: 8 }]}>Kullandığınız mama listede yok mu?</Text>
+            <Button title="Katalog dışı ürün talebi" variant="secondary" onPress={() => router.push('/requests/new')} />
           </>
         )}
 

@@ -44,6 +44,7 @@ export default function OrdersScreen() {
         <>
           <ErrorBanner message={error} />
           <Button title="Yeni sipariş ver" onPress={() => router.push('/orders/new')} />
+          <Button title="Katalog dışı taleplerim" variant="secondary" onPress={() => router.push('/requests')} />
           <View style={{ height: 12 }} />
         </>
       }

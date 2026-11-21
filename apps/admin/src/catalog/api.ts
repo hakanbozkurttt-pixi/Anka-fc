@@ -16,6 +16,8 @@ export async function listProducts(): Promise<Product[]> {
     client()
       .from('products')
       .select('*')
+      // Katalog dışı talep sonucu açılan müşteriye özel ürünler katalogda gösterilmez.
+      .is('owner_customer_id', null)
       .order('brand')
       .order('name')
       .order('package_grams')

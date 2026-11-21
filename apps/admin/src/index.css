@@ -517,3 +517,7 @@ button.small {
   text-align: right;
   padding: 6px 8px;
 }
+
+.request-message {
+  font-style: italic;
+}

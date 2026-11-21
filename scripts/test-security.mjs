@@ -921,6 +921,112 @@ try {
     assert.equal(del.data.length, createdCampaigns.length)
   })
 
+  console.log('Katalog dışı ürün talebi')
+  let reqId, privateId
+
+  await test('müşteri 160 karakterlik mesajla talep gönderebiliyor; 161 karakter ve boş mesaj reddediliyor', async () => {
+    const ok = await a.client.from('product_requests').insert({ message: 'D'.repeat(160) }).select('id, status, customer_id').single()
+    assert.equal(ok.error, null)
+    assert.deepEqual([ok.data.status, ok.data.customer_id], ['pending', a.data.user.id])
+    await service.from('product_requests').delete().eq('id', ok.data.id)
+    const long = await a.client.from('product_requests').insert({ message: 'D'.repeat(161) })
+    const empty = await a.client.from('product_requests').insert({ message: '   ' })
+    assert.ok(long.error)
+    assert.ok(empty.error)
+    const { data } = await a.client.from('product_requests').insert({ message: 'Demo: X marka kedi maması 2 kg' }).select('id').single()
+    reqId = data.id
+  })
+
+  await test('müşteri başkası adına talep giremiyor, durumu değiştiremiyor; talepleri yalnızca kendisi ve yönetici görüyor', async () => {
+    const spoof = await a.client.from('product_requests').insert({ message: 'x', customer_id: b.data.user.id })
+    assert.ok(spoof.error)
+    await a.client.from('product_requests').update({ status: 'approved' }).eq('id', reqId)
+    const { data: r } = await service.from('product_requests').select('status').eq('id', reqId).single()
+    assert.equal(r.status, 'pending')
+    assert.equal((await b.client.from('product_requests').select('id').eq('id', reqId)).data.length, 0)
+    assert.equal((await adminClient.from('product_requests').select('id').eq('id', reqId)).data.length, 1)
+  })
+
+  await test('müşteri talebi onaylayamıyor; fiyatsız onay reddediliyor', async () => {
+    const c = await a.client.rpc('admin_approve_request', { request_id: reqId, brand: 'X', name: 'Y', species: 'cat', package_grams: 2000, price_try: 1 })
+    assert.ok(c.error)
+    const noPrice = await adminClient.rpc('admin_approve_request', { request_id: reqId, brand: 'Demo X', name: 'Demo kedi', species: 'cat', package_grams: 2000, price_try: null })
+    assert.match(noPrice.error?.message ?? '', /Fiyat girilmeden/)
+  })
+
+  await test('yönetici fiyatla onaylıyor: ürün yalnızca talep edene görünüyor, katalog dışı marka olabiliyor', async () => {
+    const { data, error } = await adminClient.rpc('admin_approve_request', {
+      request_id: reqId, brand: 'TEST Başka Marka', name: `TEST özel ${run}`, species: 'cat', package_grams: 2000, price_try: 333.33,
+    })
+    assert.equal(error, null)
+    privateId = data
+    createdProductIds.push(privateId)
+    const { data: r } = await a.client.from('product_requests').select('status, product_id, decided_at').eq('id', reqId).single()
+    assert.deepEqual([r.status, r.product_id], ['approved', privateId])
+    assert.ok(r.decided_at)
+    assert.equal((await a.client.from('products').select('id').eq('id', privateId)).data.length, 1)
+    assert.equal((await b.client.from('products').select('id').eq('id', privateId)).data.length, 0)
+  })
+
+  await test('sonuçlanmış talep tekrar onaylanamıyor veya reddedilemiyor', async () => {
+    const again = await adminClient.rpc('admin_reject_request', { request_id: reqId })
+    assert.match(again.error?.message ?? '', /sonuçlandırılmış/)
+  })
+
+  await test('talep eden müşteri özel ürünü mama takibine ekleyebiliyor; başkası ekleyemiyor', async () => {
+    const own = await a.client.from('food_records').insert({ pet_id: pamuk.id, product_id: privateId, daily_grams: 50, start_date: trDate(0) }).select('id').single()
+    assert.equal(own.error, null)
+    await a.client.from('food_records').delete().eq('id', own.data.id)
+    const other = await b.client.from('food_records').insert({ pet_id: karabas.id, product_id: privateId, daily_grams: 50, start_date: trDate(0) })
+    assert.ok(other.error)
+  })
+
+  await test('özel ürün siparişinde indirim ve kampanya uygulanmıyor; fiyat nihai', async () => {
+    const { data: cid } = await adminClient.rpc('admin_save_campaign', {
+      campaign_id: null, name: `TEST kamp2 ${run}`, discount_type: 'percent', percent: 50, start_date: trDate(0), end_date: trDate(5),
+      products: [{ product_id: catProduct.id }],
+    })
+    const { data } = await a.client.rpc('place_order', {
+      items: [{ product_id: privateId, quantity: 2 }, { product_id: catProduct.id, quantity: 1 }], delivery_type: 'pickup',
+    })
+    const priv = await lineOf(data.id, privateId)
+    assert.deepEqual([priv.discount_source, Number(priv.unit_price_try), Number(priv.line_total_try)], ['none', 333.33, 666.66])
+    const cat = await lineOf(data.id, catProduct.id)
+    assert.equal(cat.discount_source, 'campaign') // katalog ürünü kampanyayı alıyor
+    await a.client.rpc('cancel_order', { order_id: data.id })
+    await adminClient.from('campaigns').delete().eq('id', cid)
+  })
+
+  await test('başka müşteri özel ürünü sipariş edemiyor', async () => {
+    const { error } = await b.client.rpc('place_order', { items: [{ product_id: privateId, quantity: 1 }], delivery_type: 'pickup' })
+    assert.match(error?.message ?? '', /satışta değil/)
+  })
+
+  await test('özel ürün kampanyaya eklenemiyor', async () => {
+    const { error } = await adminClient.rpc('admin_save_campaign', {
+      campaign_id: null, name: `TEST kamp3 ${run}`, discount_type: 'percent', percent: 20, start_date: trDate(0), end_date: trDate(5),
+      products: [{ product_id: privateId }],
+    })
+    assert.match(error?.message ?? '', /kampanyaya eklenemez/)
+  })
+
+  await test('yönetici fiyatı değiştirebiliyor; yalnızca yeni siparişlere uygulanıyor', async () => {
+    const { data: first } = await a.client.rpc('place_order', { items: [{ product_id: privateId, quantity: 1 }], delivery_type: 'pickup' })
+    await adminClient.from('products').update({ price_try: 350 }).eq('id', privateId)
+    const { data: second } = await a.client.rpc('place_order', { items: [{ product_id: privateId, quantity: 1 }], delivery_type: 'pickup' })
+    assert.equal(Number((await lineOf(first.id, privateId)).unit_price_try), 333.33)
+    assert.equal(Number((await lineOf(second.id, privateId)).unit_price_try), 350)
+    for (const x of [first, second]) await a.client.rpc('cancel_order', { order_id: x.id })
+  })
+
+  await test('yönetici talebi reddedebiliyor', async () => {
+    const { data } = await a.client.from('product_requests').insert({ message: 'Demo: reddedilecek talep' }).select('id').single()
+    const { error } = await adminClient.rpc('admin_reject_request', { request_id: data.id })
+    assert.equal(error, null)
+    const { data: r } = await a.client.from('product_requests').select('status, product_id').eq('id', data.id).single()
+    assert.deepEqual([r.status, r.product_id], ['rejected', null])
+  })
+
   await test('yönetici tüm siparişleri görüyor', async () => {
     const { data } = await adminClient.from('orders').select('id').eq('customer_id', a.data.user.id)
     assert.ok(data.length >= 4)

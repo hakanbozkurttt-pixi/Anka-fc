@@ -63,7 +63,10 @@ export default function NewOrderScreen() {
     .map((p) => ({
       product: p,
       quantity: cart[p.id],
-      best: bestUnitPrice(p.id, p.price_try, discount.kind, discount.pct, campaigns),
+      // Katalog dışı (size özel) üründe indirim/kampanya yok: hastanenin fiyatı nihai.
+      best: p.owner_customer_id
+        ? { unit: p.price_try, source: 'none' as const, pct: 0, campaignName: null }
+        : bestUnitPrice(p.id, p.price_try, discount.kind, discount.pct, campaigns),
     }));
   const totals = cartTotals(
     lines.map((l) => ({ listPrice: l.product.price_try, unitPrice: l.best.unit, quantity: l.quantity })),
@@ -148,6 +151,7 @@ export default function NewOrderScreen() {
               / paket
             </Text>
             {best.source !== 'none' ? <Text style={{ color: '#1f6f3b' }}>{priceSourceLabel(best)}</Text> : null}
+            {p.owner_customer_id ? <Text style={styles.muted}>Size özel ürün · indirim uygulanmaz</Text> : null}
             <Stepper label="Adet" a11yName={`${p.name} adet`} value={quantity} min={0} max={9999} onChange={(q) => setQty(p.id, q)} suffix="adet" />
             <Text style={{ color: colors.text }}>
               Ara toplam: {formatTL(Math.round(best.unit * 100 * quantity) / 100)}
@@ -176,6 +180,7 @@ export default function NewOrderScreen() {
                   <Text style={{ color: colors.text, fontWeight: '600' }}>
                     {formatTL(p.price_try)}
                     {campaignProducts.has(p.id) ? <Text style={{ color: '#1f6f3b' }}>  · Kampanyalı</Text> : null}
+                    {p.owner_customer_id ? <Text style={styles.muted}>  · Size özel</Text> : null}
                   </Text>
                 </View>
                 <Pressable
@@ -191,6 +196,8 @@ export default function NewOrderScreen() {
             {filtered.length > 30 ? <Text style={styles.muted}>Daha fazla sonuç var; aramayı daraltın.</Text> : null}
           </>
         )}
+        <Text style={[styles.muted, { marginTop: 8 }]}>Aradığınız ürün katalogda yok mu?</Text>
+        <Button title="Katalog dışı ürün talebi" variant="secondary" onPress={() => router.push('/requests/new')} />
 
         <Text style={styles.sectionTitle}>Teslimat</Text>
         <DeliveryForm value={delivery} onChange={setDelivery} errors={deliveryErrors} shippingFee={fee} />

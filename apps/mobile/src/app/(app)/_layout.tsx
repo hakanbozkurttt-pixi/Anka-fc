@@ -58,6 +58,7 @@ export default function AppLayout() {
       const data = response?.notification.request.content.data;
       if (typeof data?.foodRecordId === 'string') router.push({ pathname: '/food/[id]', params: { id: data.foodRecordId } });
       else if (typeof data?.orderId === 'string') router.push({ pathname: '/orders/[id]', params: { id: data.orderId } });
+      else if (typeof data?.requestId === 'string') router.push('/requests');
     };
     const last = Notifications.getLastNotificationResponse();
     if (last) {
@@ -99,6 +100,8 @@ export default function AppLayout() {
       <Stack.Screen name="orders/index" options={{ title: 'Siparişlerim' }} />
       <Stack.Screen name="orders/new" options={{ title: 'Yeni sipariş' }} />
       <Stack.Screen name="orders/[id]" options={{ title: 'Sipariş' }} />
+      <Stack.Screen name="requests/index" options={{ title: 'Katalog dışı taleplerim' }} />
+      <Stack.Screen name="requests/new" options={{ title: 'Katalog dışı ürün talebi' }} />
     </Stack>
   );
 }

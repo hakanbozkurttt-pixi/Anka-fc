@@ -5,11 +5,13 @@ import { GuidePage } from './catalog/GuidePage'
 import { ImportPage } from './catalog/ImportPage'
 import { CustomersPage } from './CustomersPage'
 import { OrdersPage } from './orders/OrdersPage'
+import { RequestsPage } from './requests/RequestsPage'
 import { SettingsPage } from './SettingsPage'
 import { supabase } from './lib/supabase'
 
 const TABS = [
   { id: 'orders', label: 'Siparişler' },
+  { id: 'requests', label: 'Talepler' },
   { id: 'catalog', label: 'Ürün kataloğu' },
   { id: 'import', label: 'Toplu yükleme' },
   { id: 'campaigns', label: 'Kampanyalar' },
@@ -65,6 +67,7 @@ export function AdminShell({ email }: { email: string }) {
       </nav>
       <main>
         {tab === 'orders' && <OrdersPage />}
+        {tab === 'requests' && <RequestsPage />}
         {tab === 'settings' && <SettingsPage />}
         {tab === 'campaigns' && <CampaignsPage />}
         {tab === 'catalog' && <CatalogPage onOpenImport={() => go('import')} onOpenGuide={() => go('guide')} />}
