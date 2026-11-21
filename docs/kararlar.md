@@ -95,4 +95,4 @@ diye işaretlidir; bu durumda buradaki karar geçerlidir.
 - Ana renk logonun kırmızısı: düğme ve yazılarda okunabilirlik için bir ton koyusu `#d40d12` (logo: `#f20007`). Olumlu durumlar (Onaylandı, indirim) yeşil, uyarılar sarı kalır.
 - Uygulama yalnızca iPhone için (iPad desteği kapalı).
 - Mağaza hazırlığı ve kontrol listesi: `docs/app-store.md`.
-- Apple ve Expo hesapları hastane adına `info@ankahayvanhastanesi.com` ile açılacak (21.11.2026). D-U-N-S başvurusu yapıldı; Apple ödemesi henüz yapılmadı.
+- D-U-N-S başvurusu yapıldı (21.11.2026); Apple ödemesi henüz yapılmadı. Apple ve Expo hesaplarının açılacağı kurumsal e-posta **belirlenecek** (info@ankahayvanhastanesi.com denendi, çalışmadı).
